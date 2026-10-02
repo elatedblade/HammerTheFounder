@@ -18,11 +18,11 @@ COPY config ./config
 COPY manage.py ./
 COPY tests ./tests
 
-RUN pip install --upgrade pip \
+RUN pip install --upgrade pip "setuptools>=68" \
     && if [ -n "$INSTALL_EXTRAS" ]; then \
-         pip install -e ".[$INSTALL_EXTRAS]"; \
+         pip install --no-build-isolation -e ".[$INSTALL_EXTRAS]"; \
        else \
-         pip install -e .; \
+         pip install --no-build-isolation -e .; \
        fi
 
 RUN addgroup --system app && adduser --system --ingroup app app \

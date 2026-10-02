@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 
 import {
   ApiRequestError,
+  completeCandidateResumeUpload,
   getCandidateResumes,
   requestCandidateResumeUpload,
   type ResumeMetadata,
@@ -151,6 +152,9 @@ export default function ResumeSection({ getToken }: { getToken: () => Promise<st
       if (!response.ok) throw new Error("Storage did not accept the upload. Choose Upload resume to request a new upload link and try again.");
       if (controller.signal.aborted) return;
       uploaded = true;
+      setMessage("Upload complete. Verifying the file…");
+      await completeCandidateResumeUpload(getToken, authorization.id, controller.signal);
+      if (controller.signal.aborted) return;
       clearFile();
       setUploadState("refreshing");
       setMessage("Upload complete. Refreshing your resume records…");

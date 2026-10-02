@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.http import Http404
 from rest_framework.exceptions import APIException, PermissionDenied
 
 from apps.candidates.models import CandidateProfile
@@ -44,3 +45,42 @@ def authorize_own_resume_upload(*, user, data):
             expires_in=UPLOAD_URL_EXPIRY_SECONDS,
         )
     return resume, upload
+
+
+def complete_own_resume_upload(*, user, resume_id):
+    """Verify a browser upload and mark the owned resume as uploaded.
+
+    Verification happens before the short database update transaction so a slow
+    storage request does not hold a row lock. The final lock makes retries and
+    concurrent completion requests idempotent.
+    """
+    resume = (
+        Resume.objects.filter(pk=resume_id, candidate__user=user)
+        .select_related("candidate")
+        .first()
+    )
+    if resume is None:
+        raise Http404
+    if resume.upload_status == Resume.UploadStatus.UPLOADED:
+        return resume
+
+    storage = get_resume_storage()
+    storage.verify_upload(
+        key=resume.s3_key,
+        content_type=resume.content_type,
+        file_size=resume.file_size,
+    )
+
+    with transaction.atomic():
+        locked_resume = (
+            Resume.objects.select_for_update()
+            .filter(pk=resume.pk, candidate__user=user)
+            .first()
+        )
+        if locked_resume is None:
+            raise Http404
+        if locked_resume.upload_status != Resume.UploadStatus.UPLOADED:
+            locked_resume.upload_status = Resume.UploadStatus.UPLOADED
+            locked_resume.version += 1
+            locked_resume.save(update_fields=["upload_status", "version", "updated_at"])
+        return locked_resume

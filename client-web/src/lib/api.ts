@@ -191,6 +191,25 @@ export async function requestCandidateResumeUpload(
   return (await response.json()) as ResumeUploadAuthorization;
 }
 
+export async function completeCandidateResumeUpload(
+  getToken: () => Promise<string | null>,
+  resumeId: string | number,
+  signal?: AbortSignal,
+): Promise<ResumeMetadata> {
+  const response = await fetch(`${apiUrl}/api/v1/candidate/resumes/${resumeId}/complete/`, {
+    method: "POST",
+    headers: await authorizationHeaders(getToken, signal),
+    cache: "no-store",
+    signal,
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "We could not verify the uploaded resume.");
+  }
+
+  return (await response.json()) as ResumeMetadata;
+}
+
 export const emptyCandidateProfileDraft: CandidateProfileDraft = {
   full_name: "",
   headline: "",

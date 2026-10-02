@@ -29,6 +29,10 @@ class ResumeStorage(Protocol):
         self, *, key: str, content_type: str, file_size: int, expires_in: int
     ) -> UploadAuthorization: ...
 
+    def verify_upload(
+        self, *, key: str, content_type: str, file_size: int
+    ) -> None: ...
+
 
 class S3ResumeStorage:
     def __init__(self, *, region, bucket, access_key_id, secret_access_key):
@@ -71,6 +75,38 @@ class S3ResumeStorage:
         return UploadAuthorization(
             url=url, headers={"Content-Type": content_type}, expires_in=expires_in
         )
+
+    def verify_upload(self, *, key: str, content_type: str, file_size: int) -> None:
+        """Verify the private object uploaded by the browser matches its intent."""
+        from botocore.exceptions import BotoCoreError, ClientError
+
+        try:
+            metadata = self.client.head_object(Bucket=self.bucket, Key=key)
+        except ClientError as exc:
+            error_code = str(exc.response.get("Error", {}).get("Code", ""))
+            if error_code in {"404", "NoSuchKey", "NotFound"}:
+                raise StorageObjectNotFound() from exc
+            raise StorageUnavailable() from exc
+        except BotoCoreError as exc:
+            raise StorageUnavailable() from exc
+
+        if (
+            metadata.get("ContentLength") != file_size
+            or metadata.get("ContentType") != content_type
+        ):
+            raise StorageObjectMismatch()
+
+
+class StorageObjectNotFound(APIException):
+    status_code = 409
+    default_detail = "The resume upload could not be found."
+    default_code = "resume_upload_not_found"
+
+
+class StorageObjectMismatch(APIException):
+    status_code = 409
+    default_detail = "The uploaded resume does not match the requested file."
+    default_code = "resume_upload_mismatch"
 
 
 def get_resume_storage() -> ResumeStorage:

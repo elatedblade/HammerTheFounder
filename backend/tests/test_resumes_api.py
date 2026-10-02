@@ -5,7 +5,12 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from apps.candidates.models import CandidateProfile
-from apps.integrations.storage.s3 import StorageNotConfigured, UploadAuthorization
+from apps.integrations.storage.s3 import (
+    StorageNotConfigured,
+    StorageObjectMismatch,
+    StorageObjectNotFound,
+    UploadAuthorization,
+)
 from apps.resumes.models import Resume
 from apps.users.models import User
 
@@ -46,6 +51,7 @@ def fake_storage():
         headers={"Content-Type": "application/pdf"},
         expires_in=300,
     )
+    storage.verify_upload.return_value = None
     return storage
 
 
@@ -182,3 +188,91 @@ def test_original_filename_alias_is_supported_for_existing_client_contract(monke
 
     assert response.status_code == 201
     assert Resume.objects.get().original_filename == "resume.docx"
+
+
+def test_complete_verifies_and_marks_owned_resume_uploaded_idempotently(monkeypatch):
+    user = make_user()
+    profile = make_profile(user)
+    resume = Resume.objects.create(
+        candidate=profile,
+        s3_key="candidates/1/resumes/one/original.pdf",
+        original_filename="one.pdf",
+        content_type="application/pdf",
+        file_size=1024,
+    )
+    storage = fake_storage()
+    monkeypatch.setattr("apps.resumes.services.get_resume_storage", lambda: storage)
+    url = reverse("resumes:candidate-resume-complete", args=[resume.id])
+
+    response = client_for(user).post(url)
+
+    assert response.status_code == 200
+    assert response.json()["upload_status"] == Resume.UploadStatus.UPLOADED
+    resume.refresh_from_db()
+    assert resume.upload_status == Resume.UploadStatus.UPLOADED
+    assert resume.version == 2
+    storage.verify_upload.assert_called_once_with(
+        key=resume.s3_key,
+        content_type="application/pdf",
+        file_size=1024,
+    )
+
+    retry = client_for(user).post(url)
+    assert retry.status_code == 200
+    assert retry.json()["upload_status"] == Resume.UploadStatus.UPLOADED
+    assert storage.verify_upload.call_count == 1
+
+
+@pytest.mark.parametrize(
+    "storage_error, expected_code",
+    [
+        (StorageObjectNotFound(), "RESUME_UPLOAD_NOT_FOUND"),
+        (StorageObjectMismatch(), "RESUME_UPLOAD_MISMATCH"),
+    ],
+)
+def test_complete_rejects_missing_or_mismatched_object(
+    storage_error, expected_code, monkeypatch
+):
+    user = make_user()
+    profile = make_profile(user)
+    resume = Resume.objects.create(
+        candidate=profile,
+        s3_key="candidates/1/resumes/one/original.pdf",
+        original_filename="one.pdf",
+        content_type="application/pdf",
+        file_size=1024,
+    )
+    storage = fake_storage()
+    storage.verify_upload.side_effect = storage_error
+    monkeypatch.setattr("apps.resumes.services.get_resume_storage", lambda: storage)
+
+    response = client_for(user).post(
+        reverse("resumes:candidate-resume-complete", args=[resume.id])
+    )
+
+    assert response.status_code == 409
+    assert response.json()["code"] == expected_code
+    resume.refresh_from_db()
+    assert resume.upload_status == Resume.UploadStatus.PENDING_UPLOAD
+
+
+def test_complete_cannot_access_another_candidates_resume(monkeypatch):
+    owner = make_user("owner")
+    other = make_user("other")
+    profile = make_profile(owner)
+    resume = Resume.objects.create(
+        candidate=profile,
+        s3_key="candidates/1/resumes/one/original.pdf",
+        original_filename="one.pdf",
+        content_type="application/pdf",
+        file_size=1024,
+    )
+    storage = fake_storage()
+    monkeypatch.setattr("apps.resumes.services.get_resume_storage", lambda: storage)
+
+    response = client_for(other).post(
+        reverse("resumes:candidate-resume-complete", args=[resume.id])
+    )
+
+    assert response.status_code == 404
+    storage.verify_upload.assert_not_called()

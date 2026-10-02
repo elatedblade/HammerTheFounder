@@ -35,7 +35,7 @@ def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response |
 
 def _error_code(status_code: int, exc: Exception) -> str:
     exception_code = getattr(exc, "default_code", None)
-    if status_code == 409 and isinstance(exception_code, str):
+    if status_code in {409, 503} and isinstance(exception_code, str):
         return exception_code.upper()
     return {
         400: "VALIDATION_ERROR",

@@ -9,7 +9,7 @@ from apps.candidates.policies import IsActiveClient
 
 from .selectors import get_own_resumes
 from .serializers import ResumeSerializer, ResumeUploadRequestSerializer
-from .services import authorize_own_resume_upload
+from .services import authorize_own_resume_upload, complete_own_resume_upload
 
 
 class CandidateResumeView(APIView):
@@ -44,5 +44,15 @@ class CandidateResumeView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+        response["Cache-Control"] = "no-store"
+        return response
+
+
+class CandidateResumeCompleteView(APIView):
+    permission_classes = (IsActiveClient,)
+
+    def post(self, request, resume_id):
+        resume = complete_own_resume_upload(user=request.user, resume_id=resume_id)
+        response = Response(ResumeSerializer(resume).data)
         response["Cache-Control"] = "no-store"
         return response

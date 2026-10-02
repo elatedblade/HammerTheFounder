@@ -29,6 +29,8 @@ The initial commercial flow is intentionally manual:
 
 See [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) for the build plan, milestones, API/domain boundaries, database design, workflows, security model, testing strategy, and future automation seams.
 
+See [`docs/PROJECT_GUIDE.md`](docs/PROJECT_GUIDE.md) for the current setup instructions, how the candidate and operator workflows work, API usage, environment configuration, testing commands, troubleshooting, and documentation-maintenance rules.
+
 ---
 
 ## Engineering Principles

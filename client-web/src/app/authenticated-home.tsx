@@ -17,6 +17,7 @@ import {
   type CurrentUser,
   type RemotePreference,
 } from "../lib/api";
+import ResumeSection from "./resume-section";
 
 type LoadState = "loading" | "ready" | "error";
 type SaveState = "idle" | "saving" | "saved" | "error" | "conflict";
@@ -303,7 +304,7 @@ function AppHeader() {
         <span className="brand-name">Hammer The Founder</span>
       </Link>
       <div className="topbar-right">
-        <span className="coming-soon">Resume tools <span>coming later</span></span>
+        <span className="coming-soon">Candidate workspace</span>
         <UserButton />
       </div>
     </header>
@@ -354,7 +355,7 @@ function ProgressRail({ draft, profile }: { draft: CandidateProfileDraft; profil
       </ol>
       <div className="guide-note">
         <span className="note-mark" aria-hidden="true">i</span>
-        <p>Resume and review tools will be added later. For now, focus on making this profile yours.</p>
+        <p>Add your resume below to give us the detail behind your profile. You can update your essentials at any time.</p>
       </div>
       {profile ? <p className="last-saved">{formatSavedAt(profile.updated_at)}</p> : null}
     </aside>
@@ -596,6 +597,7 @@ function CandidateWorkspace({ getToken }: { getToken: () => Promise<string | nul
           <ProfileForm draft={draft} setDraft={setDraft} profile={profile} saveState={saveState} savedAt={savedAt} error={error} onSave={save} onEdit={() => setSaveState((state) => state === "saved" ? "idle" : state)} onReload={reloadSavedVersion} onRetry={() => save()} />
           <ProgressRail draft={draft} profile={profile} />
         </div>
+        <ResumeSection getToken={getToken} />
         <p className="privacy-note"><span aria-hidden="true">↗</span> You’re in control of this profile. Edit or update it whenever your direction changes.</p>
         <span className="sr-only">{draftIsComplete ? "Your profile essentials are complete." : "Your profile is an in-progress draft."}</span>
       </div>

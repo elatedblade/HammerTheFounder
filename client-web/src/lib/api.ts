@@ -34,6 +34,33 @@ export type CandidateProfileDraft = Pick<
   | "remote_preference"
 >;
 
+export type ResumeMetadata = {
+  id: number | string;
+  original_filename: string;
+  content_type: string;
+  file_size: number;
+  upload_status?: string;
+  parse_status?: string;
+  version?: number;
+  created_at?: string;
+  updated_at?: string;
+  uploaded_at?: string;
+};
+
+export type ResumeUploadAuthorization = {
+  id: number | string;
+  upload_url: string;
+  upload_headers: Record<string, string>;
+  expires_at: string;
+  resume: ResumeMetadata;
+};
+
+export type ResumeUploadRequest = {
+  original_filename: string;
+  content_type: string;
+  file_size: number;
+};
+
 type ApiError = {
   code?: string;
   message?: string;
@@ -124,6 +151,44 @@ export async function saveCandidateProfile(
   }
 
   return (await response.json()) as CandidateProfile;
+}
+
+export async function getCandidateResumes(
+  getToken: () => Promise<string | null>,
+  signal?: AbortSignal,
+): Promise<ResumeMetadata[]> {
+  const response = await fetch(`${apiUrl}/api/v1/candidate/resumes/`, {
+    headers: await authorizationHeaders(getToken, signal),
+    cache: "no-store",
+    signal,
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "We could not load your resumes.");
+  }
+
+  const resumes = await response.json();
+  return Array.isArray(resumes) ? (resumes as ResumeMetadata[]) : [];
+}
+
+export async function requestCandidateResumeUpload(
+  getToken: () => Promise<string | null>,
+  input: ResumeUploadRequest,
+  signal?: AbortSignal,
+): Promise<ResumeUploadAuthorization> {
+  const response = await fetch(`${apiUrl}/api/v1/candidate/resumes/`, {
+    method: "POST",
+    headers: { ...(await authorizationHeaders(getToken, signal)), "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+    cache: "no-store",
+    signal,
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "We could not prepare your resume upload.");
+  }
+
+  return (await response.json()) as ResumeUploadAuthorization;
 }
 
 export const emptyCandidateProfileDraft: CandidateProfileDraft = {

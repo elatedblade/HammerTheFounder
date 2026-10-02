@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "apps.users.apps.UsersConfig",
     "apps.candidates.apps.CandidatesConfig",
+    "apps.resumes.apps.ResumesConfig",
 ]
 
 MIDDLEWARE = [
@@ -110,6 +111,12 @@ CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 300
 CELERY_TASK_SOFT_TIME_LIMIT = 240
+
+# Resume objects are private; authorization URLs are generated on demand only.
+AWS_REGION = os.getenv("AWS_REGION", "")
+AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET", "")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

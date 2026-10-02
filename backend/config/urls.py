@@ -1,7 +1,7 @@
 """URL configuration for the backend."""
 
 from django.http import JsonResponse
-from django.urls import path
+from django.urls import include, path
 from django.views.decorators.http import require_GET
 
 
@@ -13,4 +13,5 @@ def health(request):
 
 urlpatterns = [
     path("health/", health, name="health"),
+    path("api/v1/", include("apps.users.urls")),
 ]

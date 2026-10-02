@@ -21,7 +21,13 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["config", "config.settings"]
+packages = [
+    "config",
+    "config.settings",
+    "apps",
+    "apps.users",
+    "apps.users.migrations",
+]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.local"

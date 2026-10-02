@@ -26,14 +26,17 @@ def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response |
         details = {"errors": _json_safe(payload)}
 
     response.data = {
-        "code": _error_code(response.status_code),
+        "code": _error_code(response.status_code, exc),
         "message": message,
         "details": details,
     }
     return response
 
 
-def _error_code(status_code: int) -> str:
+def _error_code(status_code: int, exc: Exception) -> str:
+    exception_code = getattr(exc, "default_code", None)
+    if status_code == 409 and isinstance(exception_code, str):
+        return exception_code.upper()
     return {
         400: "VALIDATION_ERROR",
         401: "UNAUTHENTICATED",

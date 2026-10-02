@@ -44,7 +44,11 @@ class ClerkJWTVerifier:
         self.audience = audience or os.getenv("CLERK_JWT_AUDIENCE") or None
         configured_key = public_key or os.getenv("CLERK_JWT_PUBLIC_KEY")
         self.public_key = configured_key.replace("\\n", "\n") if configured_key else None
-        configured_jwks_url = jwks_url or os.getenv("CLERK_JWKS_URL")
+        configured_jwks_url = (
+            None
+            if self.public_key
+            else jwks_url or os.getenv("CLERK_JWKS_URL")
+        )
         self.jwks_client = PyJWKClient(configured_jwks_url) if configured_jwks_url else None
 
         if not self.issuer_url:

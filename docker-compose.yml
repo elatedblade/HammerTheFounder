@@ -38,6 +38,7 @@ services:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-replace-this-for-local-development}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
       DATABASE_URL: ${DATABASE_URL:-postgresql://htf:htf@postgres:5432/htf}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       CLERK_ISSUER_URL: ${CLERK_ISSUER_URL:-}
@@ -64,6 +65,7 @@ services:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-replace-this-for-local-development}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
       DATABASE_URL: ${DATABASE_URL:-postgresql://htf:htf@postgres:5432/htf}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       CLERK_ISSUER_URL: ${CLERK_ISSUER_URL:-}

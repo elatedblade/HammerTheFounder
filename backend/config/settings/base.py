@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "apps.users.apps.UsersConfig",
     "apps.candidates.apps.CandidatesConfig",
     "apps.resumes.apps.ResumesConfig",
+    "apps.campaigns.apps.CampaignsConfig",
 ]
 
 MIDDLEWARE = [

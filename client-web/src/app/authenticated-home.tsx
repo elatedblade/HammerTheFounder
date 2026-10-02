@@ -17,6 +17,7 @@ import {
   type CurrentUser,
   type RemotePreference,
 } from "../lib/api";
+import CampaignsSection from "./campaigns-section";
 import ResumeSection from "./resume-section";
 
 type LoadState = "loading" | "ready" | "error";
@@ -598,6 +599,7 @@ function CandidateWorkspace({ getToken }: { getToken: () => Promise<string | nul
           <ProgressRail draft={draft} profile={profile} />
         </div>
         <ResumeSection getToken={getToken} />
+        <CampaignsSection getToken={getToken} />
         <p className="privacy-note"><span aria-hidden="true">↗</span> You’re in control of this profile. Edit or update it whenever your direction changes.</p>
         <span className="sr-only">{draftIsComplete ? "Your profile essentials are complete." : "Your profile is an in-progress draft."}</span>
       </div>

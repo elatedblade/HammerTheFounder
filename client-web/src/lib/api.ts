@@ -61,6 +61,24 @@ export type ResumeUploadRequest = {
   file_size: number;
 };
 
+export type CampaignPlan = "NORMAL_APPLY" | "COLD_APPLY" | "FULL_THROTTLE";
+export type CampaignStatus = "DRAFT" | "ONBOARDING" | "READY" | "ACTIVE" | "PAUSED" | "COMPLETED" | "CANCELLED";
+export type CampaignBillingStatus = "PENDING" | "ACTIVE" | "PAST_DUE" | "CANCELLED";
+
+export type Campaign = {
+  id: string;
+  candidate_id: number;
+  plan: CampaignPlan;
+  status: CampaignStatus;
+  start_date: string | null;
+  trial_end_date: string | null;
+  billing_status: CampaignBillingStatus;
+  settings_json: Record<string, unknown>;
+  version: number;
+  created_at: string;
+  updated_at: string;
+};
+
 type ApiError = {
   code?: string;
   message?: string;
@@ -169,6 +187,24 @@ export async function getCandidateResumes(
 
   const resumes = await response.json();
   return Array.isArray(resumes) ? (resumes as ResumeMetadata[]) : [];
+}
+
+export async function getCampaigns(
+  getToken: () => Promise<string | null>,
+  signal?: AbortSignal,
+): Promise<Campaign[]> {
+  const response = await fetch(`${apiUrl}/api/v1/campaigns/`, {
+    headers: await authorizationHeaders(getToken, signal),
+    cache: "no-store",
+    signal,
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "We could not load your campaigns.");
+  }
+
+  const campaigns = await response.json();
+  return Array.isArray(campaigns) ? (campaigns as Campaign[]) : [];
 }
 
 export async function requestCandidateResumeUpload(

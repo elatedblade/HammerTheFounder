@@ -36,6 +36,8 @@ packages = [
     "apps.candidates.migrations",
     "apps.resumes",
     "apps.resumes.migrations",
+    "apps.campaigns",
+    "apps.campaigns.migrations",
     "apps.integrations",
     "apps.integrations.auth",
     "apps.integrations.storage",

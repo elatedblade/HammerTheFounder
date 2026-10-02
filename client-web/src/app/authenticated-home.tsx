@@ -10,8 +10,6 @@ import {
   emptyCandidateProfileDraft,
   getCandidateProfile,
   getCurrentUser,
-  joinCommaSeparated,
-  parseCommaSeparated,
   profileToDraft,
   saveCandidateProfile,
   type CandidateProfile,
@@ -72,6 +70,167 @@ function listIssue(values: string[], label: string): string | undefined {
   if (values.length > MAX_LIST_ITEMS) return `${label} can include up to ${MAX_LIST_ITEMS} items.`;
   if (values.some((value) => value.length > MAX_LIST_ITEM)) return `Each ${label.toLowerCase()} entry must be ${MAX_LIST_ITEM} characters or fewer.`;
   return undefined;
+}
+
+const ROLE_SUGGESTIONS = [
+  "Product Designer",
+  "Product Manager",
+  "Software Engineer",
+  "Frontend Engineer",
+  "Backend Engineer",
+  "Data Scientist",
+  "UX Researcher",
+  "Growth Marketing Manager",
+  "Engineering Manager",
+  "Chief of Staff",
+];
+
+const LOCATION_SUGGESTIONS = [
+  "Remote",
+  "New York, NY",
+  "San Francisco, CA",
+  "London, UK",
+  "Toronto, Canada",
+  "Berlin, Germany",
+  "Singapore",
+  "Bengaluru, India",
+  "Mumbai, India",
+  "Delhi, India",
+];
+
+function TagCombobox({
+  id,
+  values,
+  onChange,
+  suggestions,
+  placeholder,
+  label,
+}: {
+  id: string;
+  values: string[];
+  onChange: (values: string[]) => void;
+  suggestions: string[];
+  placeholder: string;
+  label: string;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filteredSuggestions = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return suggestions
+      .filter((suggestion) => !values.some((value) => value.toLowerCase() === suggestion.toLowerCase()))
+      .filter((suggestion) => !normalizedQuery || suggestion.toLowerCase().includes(normalizedQuery))
+      .slice(0, 6);
+  }, [query, suggestions, values]);
+
+  const addValues = useCallback((rawValues: string[]) => {
+    const additions = rawValues.map((value) => value.trim()).filter(Boolean);
+    if (!additions.length) return;
+    const next = [...values];
+    for (const value of additions) {
+      if (!next.some((existing) => existing.toLowerCase() === value.toLowerCase()) && next.length < MAX_LIST_ITEMS) {
+        next.push(value);
+      }
+    }
+    onChange(next);
+  }, [onChange, values]);
+
+  const commitQuery = useCallback(() => {
+    if (!query.trim()) return;
+    addValues([query]);
+    setQuery("");
+    setActiveIndex(0);
+  }, [addValues, query]);
+
+  const selectValue = useCallback((value: string) => {
+    addValues([value]);
+    setQuery("");
+    setActiveIndex(0);
+    setOpen(true);
+    inputRef.current?.focus();
+  }, [addValues]);
+
+  const handleInputChange = (value: string) => {
+    if (value.includes(",")) {
+      const pieces = value.split(",");
+      addValues(pieces.slice(0, -1));
+      setQuery(pieces.at(-1)?.trimStart() ?? "");
+    } else {
+      setQuery(value);
+    }
+    setActiveIndex(0);
+    setOpen(true);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setOpen(true);
+      setActiveIndex((index) => Math.min(index + 1, Math.max(filteredSuggestions.length - 1, 0)));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex((index) => Math.max(index - 1, 0));
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      if (filteredSuggestions[activeIndex]) selectValue(filteredSuggestions[activeIndex]);
+      else commitQuery();
+    } else if (event.key === "Escape") {
+      setOpen(false);
+    } else if (event.key === "Backspace" && !query && values.length) {
+      onChange(values.slice(0, -1));
+    }
+  };
+
+  return (
+    <div className="tag-combobox">
+      <div
+        className="tag-input-shell"
+        onClick={() => inputRef.current?.focus()}
+      >
+        {values.map((value) => (
+          <span className="tag-chip" key={value}>
+            {value}
+            <button
+              type="button"
+              aria-label={`Remove ${value} from ${label}`}
+              onClick={() => onChange(values.filter((item) => item !== value))}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <input
+          ref={inputRef}
+          id={id}
+          value={query}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={open && filteredSuggestions.length > 0}
+          aria-controls={`${id}-options`}
+          aria-activedescendant={filteredSuggestions[activeIndex] ? `${id}-option-${activeIndex}` : undefined}
+          placeholder={values.length ? "Add another…" : placeholder}
+          onFocus={() => setOpen(true)}
+          onBlur={() => window.setTimeout(() => { commitQuery(); setOpen(false); }, 120)}
+          onChange={(event) => handleInputChange(event.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+      </div>
+      {open && filteredSuggestions.length > 0 ? (
+        <ul className="tag-options" id={`${id}-options`} role="listbox" aria-label={`${label} suggestions`}>
+          {filteredSuggestions.map((suggestion, index) => (
+            <li key={suggestion} role="option" aria-selected={index === activeIndex} id={`${id}-option-${index}`}>
+              <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => selectValue(suggestion)}>
+                {suggestion}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
 }
 
 function StateCard({
@@ -307,11 +466,11 @@ function ProfileForm({
 
       <div className="form-section form-section-last">
         <div className="section-intro"><span className="section-number">03</span><div><h3>Direction</h3><p>Point toward the opportunities that feel worth exploring.</p></div></div>
-        <Field label="Target roles" htmlFor="target-roles" error={targetRolesIssue} hint={targetRolesIssue ? undefined : "Separate roles with commas · up to 10"}>
-          <input id="target-roles" value={joinCommaSeparated(draft.target_roles)} onChange={(event) => update("target_roles", parseCommaSeparated(event.target.value))} placeholder="e.g. Product Designer, Design Lead" />
+        <Field label="Target roles" htmlFor="target-roles" error={targetRolesIssue} hint={targetRolesIssue ? undefined : "Type to search suggestions, then press Enter or choose an option · up to 10"}>
+          <TagCombobox id="target-roles" label="target roles" values={draft.target_roles} onChange={(values) => update("target_roles", values)} suggestions={ROLE_SUGGESTIONS} placeholder="e.g. Product Designer" />
         </Field>
-        <Field label="Preferred locations" htmlFor="preferred-locations" error={preferredLocationsIssue} hint={preferredLocationsIssue ? undefined : "Separate locations with commas · up to 10"}>
-          <input id="preferred-locations" value={joinCommaSeparated(draft.preferred_locations)} onChange={(event) => update("preferred_locations", parseCommaSeparated(event.target.value))} placeholder="e.g. New York, Remote" />
+        <Field label="Preferred locations" htmlFor="preferred-locations" error={preferredLocationsIssue} hint={preferredLocationsIssue ? undefined : "Type to search suggestions, then press Enter or choose an option · up to 10"}>
+          <TagCombobox id="preferred-locations" label="preferred locations" values={draft.preferred_locations} onChange={(values) => update("preferred_locations", values)} suggestions={LOCATION_SUGGESTIONS} placeholder="e.g. New York, NY" />
         </Field>
       </div>
 

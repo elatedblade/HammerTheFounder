@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: htf
-      POSTGRES_USER: htf
-      POSTGRES_PASSWORD: htf
+      POSTGRES_DB: ${POSTGRES_DB:-htf}
+      POSTGRES_USER: ${POSTGRES_USER:-htf}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-htf}
     ports:
       - "5432:5432"
     volumes:
@@ -31,13 +31,19 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        INSTALL_EXTRAS: dev
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.local
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-replace-this-for-local-development}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
-      DATABASE_URL: postgresql://htf:htf@postgres:5432/htf
-      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL:-postgresql://htf:htf@postgres:5432/htf}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CLERK_ISSUER_URL: ${CLERK_ISSUER_URL:-}
+      CLERK_JWT_AUDIENCE: ${CLERK_JWT_AUDIENCE:-}
+      CLERK_JWT_PUBLIC_KEY: ${CLERK_JWT_PUBLIC_KEY:-}
+      CLERK_JWKS_URL: ${CLERK_JWKS_URL:-}
     ports:
       - "8000:8000"
     depends_on:
@@ -51,13 +57,19 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        INSTALL_EXTRAS: dev
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.local
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-replace-this-for-local-development}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
-      DATABASE_URL: postgresql://htf:htf@postgres:5432/htf
-      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL:-postgresql://htf:htf@postgres:5432/htf}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CLERK_ISSUER_URL: ${CLERK_ISSUER_URL:-}
+      CLERK_JWT_AUDIENCE: ${CLERK_JWT_AUDIENCE:-}
+      CLERK_JWT_PUBLIC_KEY: ${CLERK_JWT_PUBLIC_KEY:-}
+      CLERK_JWKS_URL: ${CLERK_JWKS_URL:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -71,6 +83,8 @@ services:
       dockerfile: Dockerfile
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_AUTH_MODE: ${NEXT_PUBLIC_AUTH_MODE:-unconfigured}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
     ports:
       - "3000:3000"
     depends_on:
@@ -83,6 +97,8 @@ services:
       dockerfile: Dockerfile
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_AUTH_MODE: ${NEXT_PUBLIC_AUTH_MODE:-unconfigured}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
     ports:
       - "3001:3000"
     depends_on:

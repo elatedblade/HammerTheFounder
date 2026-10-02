@@ -12,9 +12,12 @@ dependencies = [
     "djangorestframework>=3.15,<4.0",
     "psycopg[binary]>=3.2,<4.0",
     "celery[redis]>=5.4,<6.0",
+    "PyJWT[crypto]>=2.9,<3.0",
 ]
 
 [project.optional-dependencies]
+# Development and test dependencies are maintained here as the single source
+# of truth. The Docker development build and CI install this extra explicitly.
 dev = [
     "pytest>=8.0,<9.0",
     "pytest-django>=4.9,<5.0",
@@ -27,6 +30,8 @@ packages = [
     "apps",
     "apps.users",
     "apps.users.migrations",
+    "apps.integrations",
+    "apps.integrations.auth",
 ]
 
 [tool.pytest.ini_options]

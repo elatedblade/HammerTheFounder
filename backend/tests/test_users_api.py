@@ -9,7 +9,12 @@ from apps.users.models import User
 def test_current_user_endpoint_requires_authentication():
     response = APIClient().get(reverse("users:me"))
 
-    assert response.status_code == 403
+    assert response.status_code == 401
+    assert response.json() == {
+        "code": "UNAUTHENTICATED",
+        "message": "Authentication credentials were not provided.",
+        "details": {},
+    }
 
 
 @pytest.mark.django_db

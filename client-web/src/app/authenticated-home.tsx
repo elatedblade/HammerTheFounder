@@ -1,6 +1,6 @@
 "use client";
 
-import { SignInButton, UserButton, useAuth } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, UserButton, useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -275,7 +275,7 @@ export function SetupState() {
     <StateCard
       eyebrow="Authentication setup"
       title="Connect Clerk to open your workspace"
-      body="Set NEXT_PUBLIC_AUTH_MODE=clerk and NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY in the local environment, then restart the client service."
+      body="Set NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY in the local environment and remove NEXT_PUBLIC_AUTH_MODE=unconfigured if set, then restart the client service."
     />
   );
 }
@@ -635,7 +635,10 @@ export default function AuthenticatedHome() {
   if (!isSignedIn) {
     return (
       <StateCard eyebrow="Hammer The Founder" title="Your next move, with a clearer starting point" body="Sign in to shape your candidate profile and keep your direction in one place.">
-        <SignInButton mode="modal"><button className="button button-primary" type="button">Sign in</button></SignInButton>
+        <div className="flex flex-wrap gap-3">
+          <SignInButton mode="modal"><button className="button button-primary" type="button">Sign in</button></SignInButton>
+          <SignUpButton mode="modal"><button className="button button-secondary" type="button">Sign up</button></SignUpButton>
+        </div>
       </StateCard>
     );
   }

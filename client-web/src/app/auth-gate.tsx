@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-import { clerkConfigured } from "./auth-provider";
+import { clerkConfigured } from "../lib/auth-config";
 import { SetupState } from "./authenticated-home";
 
 const AuthenticatedHome = dynamic(() => import("./authenticated-home"), { ssr: false });

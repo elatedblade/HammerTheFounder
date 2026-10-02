@@ -129,7 +129,7 @@ the authorization and ownership checks on the server.
 From the repository root:
 
 ```bash
-cp .env.example .env
+if [ ! -e .env ]; then cp .env.example .env; fi
 docker compose up -d --build
 docker compose exec backend python manage.py migrate
 ```
@@ -149,6 +149,11 @@ The local compose defaults are suitable for development only. They include
 placeholder database credentials and a development Django secret; do not use
 them in production.
 
+Never overwrite an existing `.env` with `.env.example`: the template disables
+Clerk and contains no configured keys. Add missing variables individually.
+The root `.env` feeds Docker Compose; standalone `npm run dev` in a web app
+does not automatically load the parent folder's `.env`.
+
 ### Clerk configuration
 
 Set these values in `.env` and restart the web/backend services:
@@ -156,17 +161,83 @@ Set these values in `.env` and restart the web/backend services:
 ```dotenv
 NEXT_PUBLIC_AUTH_MODE=clerk
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
+CLERK_SECRET_KEY=...
 CLERK_ISSUER_URL=...
-CLERK_JWT_AUDIENCE=...
+CLERK_JWT_AUDIENCE=
 CLERK_JWKS_URL=...
 ```
 
 The exact issuer, audience, and JWKS values must match the Clerk development
 instance. Never commit `.env`, Clerk secrets, JWTs, or private keys.
 
+Set the optional audience only if your Clerk token configuration uses one;
+do not set it to a literal `...`. After updating root `.env`, recreate the
+services with `docker compose up -d backend worker client-web admin-web`.
+`docker compose restart` alone does not load changed container environment
+variables.
+
 Without a Clerk publishable key, the candidate app deliberately shows its
 authentication setup state rather than pretending that an authenticated flow
 is available.
+
+#### Clerk CLI setup and recovery (verified 2026-10-03)
+
+Use the existing development application `app_3K9YxpPZXsVMlqJilKOIZpyy2Ve`.
+This is distinct from the previously linked application; users from an older
+Clerk instance are not automatically migrated or matched to existing profiles.
+Never match identities or promote roles based only on a matching email.
+
+From the repository root, check `clerk --version`, install/update it if needed,
+then run `clerk auth login` before initialization. The repository root is not a
+Next.js package; initialize the two existing web applications separately:
+
+```bash
+(cd client-web && clerk init --app app_3K9YxpPZXsVMlqJilKOIZpyy2Ve --no-skills)
+(cd admin-web && clerk init --app app_3K9YxpPZXsVMlqJilKOIZpyy2Ve --no-skills)
+(cd client-web && clerk doctor)
+(cd admin-web && clerk doctor)
+clerk env pull --app app_3K9YxpPZXsVMlqJilKOIZpyy2Ve --instance dev --file .env
+```
+
+Review CLI-generated source changes before accepting them: initialization can
+add another provider or proxy to an already configured app. Keep a single
+provider inside `<body>` and one Next.js 16 proxy at each app's `src/proxy.ts`.
+Both proxies await `auth.protect()` for `/workspace` and include
+`/__clerk/:path*` once, after the API/TRPC matcher.
+
+The CLI creates ignored `.env.local` files inside the web apps for standalone
+Next.js development. Docker excludes these files from its images and gets its
+configuration from the root `.env`. Root-level CLI pulls use the generic
+`CLERK_PUBLISHABLE_KEY`; Compose maps it to Next.js's public variable when
+`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` is empty. Do not keep different non-empty
+publishable keys under the two names. `CLERK_SECRET_KEY` is passed only to web
+servers, never exposed through a `NEXT_PUBLIC_` variable or sent to Django.
+
+For this development application, Django's public configuration is:
+
+```dotenv
+CLERK_ISSUER_URL=https://inspired-anemone-5642.clerk.accounts.dev
+CLERK_JWKS_URL=https://inspired-anemone-5642.clerk.accounts.dev/.well-known/jwks.json
+```
+
+Keep `NEXT_PUBLIC_AUTH_MODE=clerk` for Compose. Standalone Next.js enables
+Clerk when its publishable key exists unless mode is explicitly `unconfigured`.
+After source changes run `docker compose up -d --build client-web admin-web`;
+after environment-only changes recreate the relevant services with `up -d`.
+
+Both applications expose `/sign-in` and `/sign-up`. Candidate sign-up does not
+grant operational privileges. Only existing local operational roles can enter
+the admin workspace. Test actual sign-in/sign-up in a browser: seeing a page
+or script return HTTP 200 alone is not proof that the session works.
+
+Setup verification on 2026-10-03: both `clerk doctor` checks passed (development
+only; production is not configured). Both web apps passed typecheck, lint, and
+build. Docker returned 200 for home/sign-in/sign-up and 307 to sign-in for
+anonymous `/workspace` requests. Django fetched one signing key from the
+configured JWKS endpoint and its Docker suite passed 72 tests. Authenticated
+browser sign-in/sign-up remains unverified because the browser tool could not
+open a tab; a user must complete the real login before declaring that flow
+verified.
 
 ### Resume storage configuration
 
@@ -472,7 +543,15 @@ Restart the backend after changing `.env`.
 ### Authentication is unavailable
 
 Check the Clerk publishable key and `NEXT_PUBLIC_AUTH_MODE`, then confirm the
-backend issuer/audience/JWKS values. Restart both web and backend services.
+backend issuer/audience/JWKS values. Recreate both web and backend services
+using the command in the Clerk configuration section.
+
+If `.env` matches `.env.example` exactly, the configured values have been
+replaced with defaults. Restore them from your private backup or Clerk
+dashboard; do not commit the restored file. A `200` response from the home
+page or health endpoint does not prove authentication works: the setup screen
+also returns `200`. Verify actual sign-in and an authenticated `/api/v1/me/`
+request afterward.
 
 ### Resume upload says storage is not configured
 

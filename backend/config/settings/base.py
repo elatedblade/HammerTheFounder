@@ -35,6 +35,9 @@ INSTALLED_APPS = [
     "apps.candidates.apps.CandidatesConfig",
     "apps.resumes.apps.ResumesConfig",
     "apps.campaigns.apps.CampaignsConfig",
+    "apps.companies.apps.CompaniesConfig",
+    "apps.jobs.apps.JobsConfig",
+    "apps.applications.apps.ApplicationsConfig",
 ]
 
 MIDDLEWARE = [

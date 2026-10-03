@@ -9,6 +9,7 @@ import {
   APPLICATION_STATUSES, OUTREACH_STATUSES,
 } from "../lib/api";
 import { selectOverviewMetrics } from "./overview-metrics";
+import { presentOutreachRow, presentOutreachStatus } from "./outreach-presentation";
 
 type Token = () => Promise<string | null>;
 type View = "overview" | "applications" | "outreach" | "interviews" | "activity" | "notifications" | "payments";
@@ -67,6 +68,7 @@ function ApplicationDetails({row}: {row: Application}) {
     <div><dt>Interview scheduled</dt><dd>{row.interview_scheduled_at ? <time dateTime={row.interview_scheduled_at}>{dateTime(row.interview_scheduled_at)} ({Intl.DateTimeFormat().resolvedOptions().timeZone})</time> : "Not scheduled"}</dd></div>
   </dl></details>;
 }
+type CustomerOutreach = ReturnType<typeof presentOutreachRow>;
 function Applications({getToken, campaign, interviews = false, reloadKey}: {getToken: Token; campaign: string; interviews?: boolean; reloadKey?: number}) {
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
@@ -100,7 +102,7 @@ function Applications({getToken, campaign, interviews = false, reloadKey}: {getT
   </>;
 }
 
-function OutreachDetails({row}: {row: Outreach}) {
+function OutreachDetails({row}: {row: CustomerOutreach}) {
   return <details className="record-details"><summary>View details</summary><dl><div><dt>Channel</dt><dd>{readable(row.channel)}</dd></div>
     <div><dt>Reply recorded</dt><dd>{dateTime(row.reply_at)}</dd></div><div><dt>Follow-up due</dt><dd>{dateTime(row.follow_up_due_at)}</dd></div>
     <div><dt>Delivered</dt><dd>{dateTime(row.delivered_at)}</dd></div><div><dt>Bounced</dt><dd>{dateTime(row.bounced_at)}</dd></div>
@@ -118,12 +120,12 @@ function OutreachRecords({getToken, campaign, reloadKey}: {getToken: Token; camp
     return getOutreach(getToken, query.toString(), signal);
   }, [getToken, campaign, status, offset]);
   const resource = useResource(loader, reloadKey);
-  const rows = (resource.data ?? []).filter(row => `${row.company_name} ${row.contact_name}`.toLowerCase().includes(search.toLowerCase()));
+  const rows = (resource.data ?? []).map(presentOutreachRow).filter(row => `${row.company_name} ${row.contact_name}`.toLowerCase().includes(search.toLowerCase()));
   return <><p className="muted">Outreach is handled manually by HTF. This view shows recorded progress; it does not send messages.</p>
-    <div className="record-filters"><div className="field"><label htmlFor="outreach-search">Search company or contact on this page</label><input id="outreach-search" value={search} onChange={event => setSearch(event.target.value)}/></div><div className="field"><label htmlFor="outreach-status">Outreach status</label><select id="outreach-status" value={status} onChange={event => {setStatus(event.target.value); setOffset(0);}}><option value="">All statuses</option>{OUTREACH_STATUSES.map(value => <option key={value} value={value}>{readable(value)}</option>)}</select></div></div>
+    <div className="record-filters"><div className="field"><label htmlFor="outreach-search">Search company or contact on this page</label><input id="outreach-search" value={search} onChange={event => setSearch(event.target.value)}/></div><div className="field"><label htmlFor="outreach-status">Outreach status</label><select id="outreach-status" value={status} onChange={event => {setStatus(event.target.value); setOffset(0);}}><option value="">All statuses</option>{OUTREACH_STATUSES.map(value => <option key={value} value={value}>{presentOutreachStatus(value)}</option>)}</select></div></div>
     <ResourceState {...resource}/>
     {resource.data && !rows.length ? <Empty>No outreach matches this selection.</Empty> : null}
-    {rows.length ? <div className="table-scroll" tabIndex={0} aria-label="Outreach records"><table className="records-table"><caption className="sr-only">Your outreach</caption><thead><tr><th scope="col">Company / contact</th><th scope="col">Sent</th><th scope="col">Status</th><th scope="col">Details</th></tr></thead><tbody>{rows.map(row => <tr key={row.id}><td><strong>{row.company_name}</strong><span>{row.contact_name}</span></td><td>{dateTime(row.sent_at)}</td><td><Badge value={row.status}/></td><td><OutreachDetails row={row}/></td></tr>)}</tbody></table></div> : null}
+    {rows.length ? <div className="table-scroll" tabIndex={0} aria-label="Outreach records"><table className="records-table"><caption className="sr-only">Your outreach</caption><thead><tr><th scope="col">Company / contact</th><th scope="col">Sent</th><th scope="col">Status</th><th scope="col">Details</th></tr></thead><tbody>{rows.map(row => <tr key={row.id}><td><strong>{row.company_name}</strong><span>{row.contact_name}</span></td><td>{dateTime(row.sent_at)}</td><td><Badge value={presentOutreachStatus(row.status)}/></td><td><OutreachDetails row={row}/></td></tr>)}</tbody></table></div> : null}
     <button type="button" disabled={resource.loading} className="button button-secondary button-small" onClick={resource.retry}>Refresh records</button>
     <Paging offset={offset} count={resource.data?.length ?? 0} disabled={resource.loading || Boolean(resource.error)} setOffset={setOffset}/>
   </>;

@@ -7,7 +7,7 @@
     "build": "NEXT_TEST_WASM_DIR=\"$PWD/node_modules/@next/swc-wasm-nodejs\" next build --webpack",
     "start": "next start",
     "lint": "eslint .",
-    "test": "node --experimental-strip-types --test src/app/safe-redirect.test.mjs src/app/plans/plan-helpers.test.mjs src/app/dashboard/lifecycle-presentation.test.mjs src/app/overview-metrics.test.mjs src/app/dashboard/refresh-revision.test.mjs",
+    "test": "node --experimental-strip-types --test src/app/safe-redirect.test.mjs src/app/plans/plan-helpers.test.mjs src/app/dashboard/lifecycle-presentation.test.mjs src/app/overview-metrics.test.mjs src/app/dashboard/refresh-revision.test.mjs src/app/outreach-presentation.test.mjs",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit"
   },

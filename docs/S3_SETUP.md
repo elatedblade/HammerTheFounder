@@ -1,9 +1,9 @@
 # Enable resume uploads
 
 The supplied bucket is `hammerthefounder` in `ap-southeast-2` (Sydney).
-The running backend has the bucket/region, but AWS access-key ID and secret-key
-settings are missing. The upload warning is therefore intentional: no upload can
-be authorized yet. Do not hide the warning or make the bucket public.
+The initial upload warning was caused by missing credentials, followed by CORS
+and IAM configuration gaps. Those storage checks now pass (see verification below).
+Do not hide configuration errors or make the bucket public.
 
 ## Credentials (private configuration only)
 
@@ -55,3 +55,16 @@ Then use an active CLIENT test account with a saved profile to upload a small te
 PDF. Confirm the record changes to UPLOADED and its authorized download succeeds.
 A record left in PENDING_UPLOAD is not proof of success. Credential presence alone
 does not prove the IAM policy, bucket policy, encryption or CORS are correct.
+
+## Verified after configuration
+
+On 2026-10-03, a synthetic, non-personal PDF passed the real S3 storage path:
+browser-origin PUT preflight, signed upload (HTTP 200), upload-response CORS,
+server-side size/type verification, and byte-matching signed download. Anonymous
+access returned HTTP 403. This verifies storage transport, not a completed
+authenticated candidate browser upload.
+
+Cleanup was denied because the application identity has no DeleteObject permission.
+No broader permission is needed for resume uploads. Remove the synthetic object
+manually from the S3 console if desired:
+`candidates/_setup-checks/b935979d-7a1e-45d9-b0e9-249bb0e5a3f0/original.pdf`.

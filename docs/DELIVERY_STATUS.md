@@ -119,3 +119,13 @@ Docker npm installs reported **five high-severity dependency advisories per
 frontend**. They have not been triaged or fixed; do not treat this as production
 security clearance. No forced dependency upgrades were applied during auth setup.
 S3 bucket/region were supplied, but credentials, policies and uploads remain unverified.
+
+### Subsequent S3 verification
+
+After the user configured credentials, CORS and IAM object permissions, the live
+synthetic PDF check passed: PUT preflight, signed upload, response CORS, HEAD
+size/type verification, signed download with identical bytes, and anonymous
+access denied. The earlier S3-unverified note above is superseded for these checks.
+The actual authenticated candidate browser upload still requires acceptance.
+One synthetic PDF remains because cleanup lacked DeleteObject permission; its
+exact key is documented in `S3_SETUP.md`. No permission escalation was performed.

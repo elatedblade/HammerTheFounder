@@ -5,14 +5,16 @@ export function safeCustomerRedirect(value: string | null | undefined): string {
   if (!value) return "/dashboard";
   try {
     const url = new URL(value, "https://local.invalid");
-    if (url.origin !== "https://local.invalid" || !["/dashboard", "/profile"].includes(url.pathname)) return "/dashboard";
+    if (url.origin !== "https://local.invalid" || !["/dashboard", "/profile", "/plans"].includes(url.pathname)) return "/dashboard";
     const plan = url.searchParams.get("plan");
-    return url.pathname + (plan && plans.has(plan as IntentPlan) ? `?plan=${encodeURIComponent(plan)}` : "");
+    const validPlan = plan && plans.has(plan as IntentPlan);
+    const path = url.pathname === "/dashboard" && validPlan ? "/plans" : url.pathname;
+    return path + (path === "/plans" && validPlan ? `?plan=${encodeURIComponent(plan)}` : "");
   } catch { return "/dashboard"; }
 }
 
 export function intentRedirectFromParams(params: URLSearchParams): string {
-  return safeCustomerRedirect(params.get("redirect_url") ?? (params.get("plan") ? `/dashboard?plan=${params.get("plan")}` : "/dashboard"));
+  return safeCustomerRedirect(params.get("redirect_url") ?? (params.get("plan") ? `/plans?plan=${params.get("plan")}` : "/dashboard"));
 }
 
 export function authCounterpartUrl(path: "/sign-in" | "/sign-up", redirect: string): string {

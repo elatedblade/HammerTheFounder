@@ -177,11 +177,12 @@ class CompletionSerializer(serializers.Serializer):
 class OperatorCandidateSerializer(CandidateProfileSerializer):
     user_id = serializers.IntegerField(read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
+    applications_submitted = serializers.IntegerField(read_only=True)
     review_status = serializers.ChoiceField(choices=("APPROVED", "CHANGES_REQUESTED"), required=False)
 
     class Meta(CandidateProfileSerializer.Meta):
         model = CandidateProfile
-        fields = (*CandidateProfileSerializer.Meta.fields, "user_id", "email", "review_notes", "reviewed_at")
+        fields = (*CandidateProfileSerializer.Meta.fields, "user_id", "email", "review_notes", "reviewed_at", "applications_submitted")
         read_only_fields = ("id", "created_at", "updated_at", "basics_complete", "user_id", "email", "reviewed_at")
 
     def validate(self, attrs):

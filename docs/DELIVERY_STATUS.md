@@ -132,6 +132,89 @@ exact key is documented in `S3_SETUP.md`. No permission escalation was performed
 
 ## Three-page customer journey revision (2026-10-03)
 
+### Approved interface refinement implementation
+
+Latest follow-up supersedes earlier hidden-tab notes: Inquiries and Notifications
+are restored as primary admin tabs. Scope controls affect Overview only. Customer
+overview presents five primary application metrics with extras collapsed, not
+deleted. Help's requested mailbox is configured in local `SUPPORT_EMAIL` and
+verified through the running contact endpoint. Notification history now paginates
+beyond 200 records. No real messages were sent or candidate records changed.
+
+Current verification: **186 backend tests**, **6 admin helper/contract tests**,
+**10 customer helper tests**, **3 anonymous browser tests** passed; both frontend
+lint/typechecks/builds and Django/migration checks passed. Added admin mutation →
+customer read parity tests for application metrics/history, payments, inquiries,
+notifications and access boundaries using isolated DRF test authentication.
+Live Clerk authenticated browser acceptance remains separate and outstanding.
+
+Final verification: **182 backend tests passed**, Django checks and migration-drift
+checks passed. Both frontend builds/lint/typechecks passed; customer helper tests
+8 passed, admin checks 3 passed, anonymous browser tests 3 passed after dev-server
+warmup/cleanup. All six local services are running and HTTP smoke checks passed.
+Authenticated end-to-end acceptance and prior security/deployment gaps remain open.
+Final local campaign snapshot is still READY=2, ACTIVE=0; no state was silently
+changed. See the refinement plan for local dependency-image reuse during the slow
+Docker rebuild and exact limitations of these checks.
+
+See `docs/harshit interface changes refining.md` for scope and remaining acceptance.
+The customer dashboard now uses actual campaign lifecycle before acquisition or
+inquiry state. ACTIVE/READY/paused/onboarding campaigns no longer get the new-plan
+prompt; null/loading/error campaign responses are not treated as empty. A manual
+campaign-status refresh is available after work performed from another session.
+
+Admin navigation is reduced to Overview, Candidates, Campaigns, Applications and
+Payments. Optional domains remain implemented; inquiry conversion is a secondary
+Campaigns panel. Overview has explicit real metrics instead of nested JSON, with
+ready versus active and pending payments separate. Candidate detail now has scoped
+submitted counts, application/payment history and preserved profile/resume review.
+Payment lists page beyond 200 rows. Applications use searchable catalogs plus
+company/job creation without losing the application draft or coercing UUIDs.
+Both workspaces adopt the landing light palette; existing records are preserved.
+
+New tests cover cross-operator candidate aggregates, visibility filters, >200
+payment records, candidate search, overview scope, UUID payload serialization and
+customer lifecycle choices. Admin tests include two source-level contract checks;
+these must not be described as authenticated browser tests. Live authenticated UI
+acceptance, campaign selector scaling, advisory triage and full accessibility
+validation remain outstanding. Current combined-run results are recorded in the
+refinement plan after the rebuild completes.
+
+### Subsequent dedicated Plans page request
+
+The latest request adds a fourth primary page, `/plans`, superseding the earlier
+three-page restriction. Dashboard and landing plan links now lead there. Profile
+links remain for profile-specific tasks only. The page includes plan selection,
+actual ACTIVE campaigns, inquiry confirmation and an always-present Help section.
+
+Plans has a lazy-loaded screen and route error boundary. Its API requests have
+independent error/retry states; dashboard progress no longer depends on inquiry
+or contact endpoints succeeding. Shared request handling lives outside the plans
+feature. Abort/account guards, duplicate-click protection, backend ownership and
+transactional deduplication remain in place. Selection cannot alter an active
+campaign. These measures reduce failure coupling, not a guarantee of no failures.
+
+Help reads validated `SUPPORT_EMAIL` configuration via the no-store public contact
+endpoint, with additional mailto validation in the browser. No support email has
+been supplied yet. The confirmed business WhatsApp destination is configured in
+private local configuration; the running endpoint reports WhatsApp ready and
+support email unavailable. No message was sent.
+
+Verified after integration: backend `python -m pytest -q` **177 passed**, Django
+check and migration-drift checks passed; client `npm run typecheck`, `npm run lint`,
+`npm test` (**4 helper tests**), `npm run build`, and `npm run test:e2e` (**3 anonymous
+browser tests**) passed. Docker services rebuilt; signed-out `/plans` redirects to
+sign-in. Real authenticated Plans interaction and end-to-end external handoff
+still need acceptance; anonymous tests are not evidence of that flow.
+
+Review findings addressed: misleading dashboard CTA, coupling inquiry failure to
+campaign progress, distinguishing ACTIVE from other states, hardcoded admin-link
+fallback usage in the new screen, cancellation before handoff, and email/redirect
+injection validation. Outstanding: support email missing, five reported high-severity
+frontend dependency advisories still require triage, and Clerk route-matcher
+deprecation is reported by tests. Existing backend permissions remain authoritative;
+this is not a security certification or a promise of zero vulnerabilities.
+
 Revised plan: `docs/new by harshit.md`. The original implementation plan is
 unchanged. The customer app now has a public marketing landing `/`, editable
 profile/resumes `/profile`, and progress-focused `/dashboard`. `/workspace`

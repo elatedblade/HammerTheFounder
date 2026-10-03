@@ -140,6 +140,9 @@ UPI_ID = os.getenv("UPI_ID", "")
 UPI_PAYEE_NAME = os.getenv("UPI_PAYEE_NAME", "")
 UPI_INSTRUCTIONS = os.getenv("UPI_INSTRUCTIONS", "")
 WHATSAPP_BUSINESS_NUMBER = os.getenv("WHATSAPP_BUSINESS_NUMBER", "").strip()
+# Public support mailbox, not the notification sender or a secret. Validate at
+# the public contact boundary so malformed optional configuration fails closed.
+SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "")
 OMNIROUTE_BASE_URL = os.getenv("OMNIROUTE_BASE_URL", "")

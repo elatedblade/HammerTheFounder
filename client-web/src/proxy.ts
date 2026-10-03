@@ -1,7 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
+import { safeCustomerRedirect } from "./app/safe-redirect";
 
-const isProtectedRoute = createRouteMatcher(["/workspace(.*)", "/profile(.*)", "/dashboard(.*)"]);
+const isProtectedRoute = createRouteMatcher(["/workspace(.*)", "/profile(.*)", "/dashboard(.*)", "/plans(.*)"]);
 const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 const authMode = process.env.NEXT_PUBLIC_AUTH_MODE ?? (publishableKey ? "clerk" : "unconfigured");
 
@@ -13,6 +14,7 @@ const authenticatedProxy = clerkMiddleware(async (auth, request) => {
 });
 
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
+  if (request.nextUrl.pathname === "/dashboard" && request.nextUrl.searchParams.has("plan")) return NextResponse.redirect(new URL(safeCustomerRedirect(`/plans${request.nextUrl.search}`), request.url));
   if (authMode !== "clerk" || !publishableKey) return NextResponse.next();
   return authenticatedProxy(request, event);
 }

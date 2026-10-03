@@ -5,7 +5,26 @@
 This is a copy, not a replacement of `IMPLEMENTATION_PLAN.md`. This revision
 takes precedence over the retained reference below for the customer journey.
 
-### Exactly three primary customer pages
+### Updated navigation: dedicated Plans page (2026-10-03 follow-up)
+
+The later request adds `/plans` as a fourth primary page, superseding the earlier
+three-page constraint below. Plan selection belongs here, not in Profile or
+Dashboard. Landing CTAs and dashboard plan actions link here; valid legacy
+`/dashboard?plan=...` links redirect here with intent preserved through sign-in.
+Show actual ACTIVE campaigns separately from inquiries. Selecting another plan
+creates an inquiry only; it cannot activate or modify an existing campaign.
+
+Plans owns its route error boundary and lazy-loaded screen. Contact, campaign and
+inquiry requests have independent failure/retry states. Dashboard progress must
+not depend on public contact or inquiry endpoints succeeding. Backend permissions,
+transactional duplicate prevention and validated redirect destinations still apply.
+
+Help uses the validated deployment setting `SUPPORT_EMAIL`, not an address embedded
+in UI code. Missing/invalid configuration shows an unavailable message. The owner
+has not yet supplied an email. WhatsApp uses the separately configured confirmed
+business number. Neither Help nor WhatsApp sends a message automatically.
+
+### Original three-page direction (superseded by Plans addition above)
 
 1. **Landing `/`:** public marketing explaining HTF, its target customers, managed
    applications and founder/CXO outreach, three service plans, process and FAQs.

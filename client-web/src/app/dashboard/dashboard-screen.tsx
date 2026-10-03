@@ -1,34 +1,81 @@
 "use client";
+
 import { useAuth, useUser } from "@clerk/nextjs";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { SERVICE_PLANS } from "../../lib/marketing";
-import { createInquiry, getCandidateProfile, getCampaigns, getCurrentUser, getInquiries, getPublicContact, isSafeWhatsAppUrl, type Campaign, type Inquiry, type ServicePlan } from "../../lib/api";
+import {
+  getCandidateProfile,
+  getCampaigns,
+  getCurrentUser,
+  getInquiries,
+  isSafeWhatsAppUrl,
+  type Campaign,
+  type Inquiry,
+  type ServicePlan,
+} from "../../lib/api";
 import CandidateProgress, { readable } from "../candidate-progress";
+import { useRequest } from "../../lib/use-request";
 import { AccessDeniedState, AppHeader, LoadingSkeleton, SignedOutState } from "../customer-shell";
+import { getLifecyclePresentation } from "./lifecycle-presentation";
+import { bumpRefreshRevision } from "./refresh-revision";
 
-const validPlans = new Set<ServicePlan>(["NORMAL_APPLY", "COLD_APPLY", "FULL_THROTTLE"]);
 const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL ?? "http://localhost:3001";
-function planName(plan: ServicePlan) { return SERVICE_PLANS.find((item: { id: string }) => item.id === plan)?.name ?? readable(plan); }
+
+function planName(plan: ServicePlan) {
+  return SERVICE_PLANS.find((item) => item.id === plan)?.name ?? readable(plan);
+}
 
 export default function DashboardScreen() {
-  const handoffRequest = useRef<AbortController | null>(null);
-  useEffect(() => () => handoffRequest.current?.abort(), []);
-  const { getToken, isLoaded, isSignedIn } = useAuth(); const { user: clerkUser } = useUser(); const params = useSearchParams();
-  const selected = params.get("plan") as ServicePlan | null; const plan = selected && validPlans.has(selected) ? selected : null;
-  const [inquiries, setInquiries] = useState<Inquiry[]>([]); const [campaigns, setCampaigns] = useState<Campaign[]>([]); const [profileComplete, setProfileComplete] = useState(false); const [loading, setLoading] = useState(true); const [identityReady, setIdentityReady] = useState(false); const [error, setError] = useState<string | null>(null); const [contactConfigured, setContactConfigured] = useState<boolean | null>(null); const [submitting, setSubmitting] = useState(false); const [choiceError, setChoiceError] = useState<string | null>(null); const [role, setRole] = useState<string>("CLIENT");
-  const load = useCallback(async (signal: AbortSignal) => { setLoading(true); setIdentityReady(false); setError(null); setInquiries([]); setCampaigns([]); setProfileComplete(false); try { const user = await getCurrentUser(getToken, signal); if (user.role !== "CLIENT") { setRole(user.role); return; } const [rows, contact, campaignRows, profile] = await Promise.all([getInquiries(getToken, signal), getPublicContact(signal), getCampaigns(getToken, signal), getCandidateProfile(getToken, signal)]); if (!signal.aborted) { setInquiries(rows); setContactConfigured(contact.whatsapp_configured); setCampaigns(campaignRows); setProfileComplete(Boolean(profile?.basics_complete)); setRole(user.role); setIdentityReady(true); } } catch (e) { if (!signal.aborted) setError(e instanceof Error ? e.message : "We could not load your dashboard."); } finally { if (!signal.aborted) setLoading(false); } }, [getToken]);
-  // The request callback synchronizes this account's server snapshot; the keyed route prevents cross-account reuse.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { if (!isLoaded || !isSignedIn || !clerkUser?.id) return; const controller = new AbortController(); void load(controller.signal); return () => controller.abort(); }, [isLoaded, isSignedIn, clerkUser?.id, load]);
-  const continueToWhatsApp = async () => { if (!plan || submitting || !identityReady || loading || contactConfigured !== true) return; const controller = new AbortController(); handoffRequest.current = controller; setSubmitting(true); setChoiceError(null); try { const inquiry = await createInquiry(getToken, plan, controller.signal); if (controller.signal.aborted) return; if (!isSafeWhatsAppUrl(inquiry.whatsapp_url)) throw new Error("WhatsApp is not configured for this workspace yet. Your selection was not opened."); window.location.assign(inquiry.whatsapp_url); } catch (e) { if (controller.signal.aborted) return; setChoiceError(e instanceof Error ? e.message : "We could not prepare WhatsApp."); setSubmitting(false); } };
-  const latest = inquiries[0]; const nextAction = !profileComplete ? "Complete your profile so HTF can review your search direction." : latest ? latest.status === "OPEN" ? "Continue the conversation with HTF using your saved inquiry." : latest.status === "CONTACTED" ? "HTF is reviewing your conversation and will follow up." : latest.status === "CONVERTED" ? "Your campaign setup is being handled by HTF." : "Contact HTF if you would like to discuss a new plan." : "Choose a plan when you are ready to discuss your search.";
-  if (!isLoaded) return <LoadingSkeleton />; if (!isSignedIn) return <SignedOutState redirect={plan ? `/dashboard?plan=${plan}` : "/dashboard"} />;
-  if (role !== "CLIENT") return <AccessDeniedState adminUrl={adminUrl} />;
-  return <main className="app-shell"><AppHeader /><div className="content-wrap"><div className="page-intro"><span className="eyebrow">Customer dashboard</span><h1>Your search, in view<span className="accent-dot">.</span></h1><p>See real progress recorded by HTF, your inquiry status and the next useful action. Campaign work is manual and activation is handled by the HTF team.</p></div>
-    {plan ? <section className="panel progress-panel" aria-labelledby="plan-heading"><span className="eyebrow">Plan selected</span><h2 id="plan-heading">Discuss {planName(plan)} with HTF</h2><p className="muted">This saves an inquiry owned by your account. Opening WhatsApp is only an invitation to discuss your plan—not proof of payment, message delivery or campaign activation.</p>{contactConfigured === false ? <div className="notice notice-warning" role="status"><strong>WhatsApp contact is not configured yet.</strong><p>Keep this selection and contact HTF another way; no destination has been invented.</p></div> : null}{choiceError ? <div className="notice notice-error" role="alert"><strong>We could not continue.</strong><p>{choiceError}</p></div> : null}<button type="button" className="button button-primary" disabled={submitting || contactConfigured !== true} onClick={() => void continueToWhatsApp()}>{submitting ? "Saving inquiry…" : "Continue to WhatsApp"}</button></section> : null}
-     <section className="panel progress-panel" aria-labelledby="status-heading"><div className="panel-heading"><div><span className="eyebrow">Your next action</span><h2 id="status-heading">{nextAction}</h2></div><Link href="/profile" className="button button-secondary button-small">Update profile</Link></div>{loading ? <p className="muted" role="status">Loading your inquiry status…</p> : error ? <div className="notice notice-error" role="alert"><p>{error}</p><button type="button" className="button button-secondary button-small" onClick={() => void load(new AbortController().signal)}>Try again</button></div> : latest ? <><dl className="detail-grid"><div><dt>Plan</dt><dd>{planName(latest.plan)}</dd></div><div><dt>Inquiry status</dt><dd>{readable(latest.status)}</dd></div><div><dt>Last updated</dt><dd>{new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(latest.updated_at))}</dd></div></dl>{(latest.status === "OPEN" || latest.status === "CONTACTED") && isSafeWhatsAppUrl(latest.whatsapp_url) ? <p><a className="button button-primary button-small" href={latest.whatsapp_url}>Resume WhatsApp conversation</a></p> : null}</> : <p className="record-empty">No inquiry saved yet. Choose a plan from the home page to start a conversation with HTF.</p>}</section>
-     {campaigns.length ? <section className="panel progress-panel" aria-labelledby="campaign-heading"><span className="eyebrow">Campaign status</span><h2 id="campaign-heading">Your managed search</h2><ul className="campaign-list">{campaigns.map(campaign => <li className="campaign-card" key={campaign.id}><strong>{planName(campaign.plan)}</strong><span className="campaign-status is-neutral">{readable(campaign.status)}</span></li>)}</ul></section> : null}
-     {identityReady ? <CandidateProgress getToken={getToken} /> : null}</div></main>;
+  const { getToken, isLoaded, isSignedIn } = useAuth();
+  const { user: clerkUser } = useUser();
+  const [refreshRevision, setRefreshRevision] = useState(0);
+  const identity = useRequest(
+    useCallback((signal: AbortSignal) => getCurrentUser(getToken, signal), [getToken]),
+    Boolean(isLoaded && isSignedIn && clerkUser?.id),
+  );
+  const isClient = identity.data?.role === "CLIENT";
+  const inquiries = useRequest(
+    useCallback((signal: AbortSignal) => getInquiries(getToken, signal), [getToken]),
+    isClient,
+  );
+  const campaigns = useRequest(
+    useCallback((signal: AbortSignal) => getCampaigns(getToken, signal), [getToken]),
+    isClient,
+  );
+  const profile = useRequest(
+    useCallback((signal: AbortSignal) => getCandidateProfile(getToken, signal), [getToken]),
+    isClient,
+  );
+
+  if (!isLoaded || identity.loading) return <LoadingSkeleton />;
+  if (!isSignedIn) return <SignedOutState redirect="/dashboard" />;
+  if (identity.error) {
+    return <main className="state-page"><section className="state-card" role="alert"><h1>Workspace identity unavailable</h1><p>We could not verify this account, so no dashboard records are being treated as empty.</p><button className="button button-primary" onClick={identity.retry}>Try again</button></section></main>;
+  }
+  if (!isClient) return <AccessDeniedState adminUrl={adminUrl} />;
+
+  const refreshDashboard = () => {
+    // Each request owns its abort controller. Bumping the generation also
+    // reloads CandidateProgress' independent resource hooks, without keeping
+    // records from the previous account or campaign selection on screen.
+    identity.retry();
+    inquiries.retry();
+    campaigns.retry();
+    profile.retry();
+    setRefreshRevision(bumpRefreshRevision);
+  };
+  const refreshing = identity.loading || inquiries.loading || campaigns.loading || profile.loading;
+
+  const latest = inquiries.data?.[0];
+  const lifecycle = getLifecyclePresentation({ campaigns: campaigns.data, campaignsLoading: campaigns.loading, campaignsError: Boolean(campaigns.error), inquiry: latest, profile: profile.data });
+  return <main className="app-shell"><AppHeader /><div className="content-wrap">
+    <button type="button" className="button button-secondary button-small" disabled={refreshing} onClick={refreshDashboard}>Refresh dashboard status</button>
+    <div className="page-intro"><span className="eyebrow">Customer dashboard</span><h1>Your search, in view<span className="accent-dot">.</span></h1><p>See real progress recorded by HTF, your inquiry status and the next useful action. Campaign work is manual and activation is handled by the HTF team.</p></div>
+     <section className="panel progress-panel" aria-labelledby="status-heading"><div className="panel-heading"><div><span className="eyebrow">Campaign lifecycle</span><h2 id="status-heading">{lifecycle.headline}</h2><p className="muted">{lifecycle.detail}</p></div>{lifecycle.showProfileAction ? <Link href="/profile" className="button button-secondary button-small">Update profile</Link> : lifecycle.showPlansLink ? <Link href="/plans" className="button button-secondary button-small">View plans</Link> : null}</div>
+      {lifecycle.kind === "none" && (inquiries.loading || profile.loading ? <p className="muted" role="status">Loading your workspace status…</p> : inquiries.error ? <div className="notice notice-error" role="alert"><p>{inquiries.error}</p><button type="button" className="button button-secondary button-small" onClick={inquiries.retry}>Try again</button></div> : profile.error ? <div className="notice notice-error" role="alert"><p>{profile.error}</p><button type="button" className="button button-secondary button-small" onClick={profile.retry}>Try again</button></div> : latest ? <><dl className="detail-grid"><div><dt>Plan</dt><dd>{planName(latest.plan)}</dd></div><div><dt>Inquiry status</dt><dd>{readable(latest.status)}</dd></div><div><dt>Last updated</dt><dd>{new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(latest.updated_at))}</dd></div></dl>{(latest.status === "OPEN" || latest.status === "CONTACTED") && isSafeWhatsAppUrl(latest.whatsapp_url) ? <p><a className="button button-primary button-small" href={latest.whatsapp_url}>Resume WhatsApp conversation</a></p> : null}</> : <p className="record-empty">No inquiry saved yet. Choose a plan to start a conversation with HTF.</p>)}
+    </section>
+     {campaigns.loading ? <p className="muted" role="status">Loading campaign status…</p> : campaigns.error ? <section className="notice notice-error" role="alert"><p>{campaigns.error}</p><button type="button" className="button button-secondary button-small" onClick={campaigns.retry}>Try again</button></section> : campaigns.data?.length ? <section className="panel progress-panel" aria-labelledby="campaign-heading"><span className="eyebrow">Campaign status</span><h2 id="campaign-heading">Your managed search</h2><ul className="campaign-list">{campaigns.data.map((campaign: Campaign) => <li className="campaign-card" key={campaign.id}><strong>{planName(campaign.plan)}</strong><span className="campaign-status is-neutral">{readable(campaign.status)}</span></li>)}</ul></section> : lifecycle.showChoosePlan ? <section className="panel progress-panel"><span className="eyebrow">Next step</span><h2>Ready to discuss your search?</h2><p className="muted">Choose a plan to start an inquiry. Your selection will not activate or modify a campaign.</p><Link className="button button-primary" href="/plans">Choose a plan</Link></section> : null}
+    {isClient ? <CandidateProgress key={refreshRevision} getToken={getToken} reloadKey={refreshRevision} /> : null}
+  </div></main>;
 }

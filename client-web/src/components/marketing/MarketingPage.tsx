@@ -51,7 +51,7 @@ export default function MarketingPage() {
             {index === 1 && <span className={styles.planTag}>Founder &amp; CXO outreach</span>}
             <div className={styles.planNumber}>0{index + 1}</div><h3>{plan.name}</h3><p className={styles.planSummary}>{plan.summary}</p>
             <ul>{plan.features.map((feature) => <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>)}</ul>
-            <Link className={index === 1 ? styles.primaryButton : styles.secondaryButton} href={`/dashboard?plan=${plan.id}`}>Choose {plan.name} <span aria-hidden="true">↗</span></Link>
+             <Link className={index === 1 ? styles.primaryButton : styles.secondaryButton} href={`/plans?plan=${plan.id}`}>Choose {plan.name} <span aria-hidden="true">↗</span></Link>
           </article>)}</div>
           <p className={styles.planFootnote}>Plan details and any commercial terms are discussed directly with HTF. Selecting a plan does not start a campaign.</p>
         </section>

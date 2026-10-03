@@ -1,5 +1,15 @@
 # Three-page customer journey integration contract
 
+## Follow-up: dedicated Plans page
+
+The newer request supersedes the original three-page restriction: `/plans` now
+owns selection, current ACTIVE campaign status and configurable email Help.
+Landing/dashboard plan CTAs go to `/plans`; old dashboard plan query links redirect.
+`GET /api/v1/public/contact/` now also returns `support_email: string|null`, validated
+from `SUPPORT_EMAIL`, with `Cache-Control: no-store`. UI validates mailto destinations
+again. Missing contact configuration must not block campaign progress or profile.
+The prior ownership notes below describe the earlier implementation, not new scope.
+
 Scope: `new by harshit.md`. No invented WhatsApp number/prices. Retain permissions
 and manual campaign activation.
 

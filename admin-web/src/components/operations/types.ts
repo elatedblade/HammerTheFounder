@@ -16,7 +16,7 @@ export type Action = {
 export type Resource = {
   title: string; path: string; columns: string[]; fields?: Field[]; editFields?: Field[] | ((row: RecordData) => Field[]); actions?: Action[];
   scoped?: boolean; description?: string; adminEdit?: boolean; fetchDetail?: boolean; createConfirm?: string; paginated?: boolean;
-  statusOptions?: string[];
+  statusOptions?: string[]; pageSize?: number;
 };
 export type WorkspaceContext = {
   api: ApiClient; user: CurrentUser; campaign: string; revision: number; refresh: () => void;
@@ -25,7 +25,7 @@ export type WorkspaceContext = {
 export function display(value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";
   if (Array.isArray(value)) return value.map(display).join(", ");
-  if (typeof value === "object") return JSON.stringify(value, null, 2);
+  if (typeof value === "object") return "Available";
   return String(value);
 }
 export function humanize(name: string): string { return name.replaceAll("_", " ").replace(/^./, (s) => s.toUpperCase()); }

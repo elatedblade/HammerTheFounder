@@ -6,14 +6,18 @@ from apps.users.permissions import IsOperatorOrAdmin
 from apps.operations.common import bounded, administrator
 from .models import Inquiry
 from .serializers import InquirySerializer, InquiryAdminSerializer, InquiryCreateSerializer, InquiryUpdateSerializer
-from .services import create_inquiry, update_inquiry, convert_inquiry, whatsapp_configured
+from .services import create_inquiry, update_inquiry, convert_inquiry, whatsapp_configured, support_email
 from .selectors import operational_inquiries
 
 
 class PublicContactView(APIView):
     permission_classes = ()
     authentication_classes = ()
-    def get(self, request): return Response({"whatsapp_configured": whatsapp_configured()})
+    def get(self, request):
+        return Response(
+            {"whatsapp_configured": whatsapp_configured(), "support_email": support_email()},
+            headers={"Cache-Control": "no-store"},
+        )
 
 
 class CandidateInquiryView(APIView):

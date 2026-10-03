@@ -86,7 +86,7 @@ export type PaymentInstructions = { configured: boolean; upi_id: string|null; pa
 export type ServicePlan = "NORMAL_APPLY" | "COLD_APPLY" | "FULL_THROTTLE";
 export type InquiryStatus = "OPEN" | "CONTACTED" | "CONVERTED" | "CLOSED";
 export type Inquiry = { id: string; reference: string; plan: ServicePlan; status: InquiryStatus; created_at: string; updated_at: string; campaign_id: string | null; whatsapp_url: string | null };
-export type PublicContact = { whatsapp_configured: boolean };
+export type PublicContact = { whatsapp_configured: boolean; support_email: string | null };
 
 async function getJson<T>(getToken: () => Promise<string|null>, path: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(`${apiUrl}/api/v1/${path}`, { headers: await authorizationHeaders(getToken, signal), cache: "no-store", signal });
@@ -97,8 +97,12 @@ export const getDashboard = (token: () => Promise<string|null>, signal?: AbortSi
 export const getApplications = (token: () => Promise<string|null>, query = "", signal?: AbortSignal) => getJson<Application[]>(token, `applications/${query ? `?${query}` : ""}`, signal);
 export const getOutreach = (token: () => Promise<string|null>, query = "", signal?: AbortSignal) => getJson<Outreach[]>(token, `outreach/${query ? `?${query}` : ""}`, signal);
 export const getEvents = (token: () => Promise<string|null>, query = "", signal?: AbortSignal) => getJson<CampaignEvent[]>(token, `events/${query ? `?${query}` : ""}`, signal);
-export const getNotifications = (token: () => Promise<string|null>, signal?: AbortSignal, campaign = "") => getJson<Notification[]>(token, `notifications/${campaign ? `?${new URLSearchParams({campaign})}` : ""}`, signal);
-export const getPayments = (token: () => Promise<string|null>, signal?: AbortSignal, campaign = "") => getJson<Payment[]>(token, `billing/payments/${campaign ? `?${new URLSearchParams({campaign})}` : ""}`, signal);
+export const getNotifications = (token: () => Promise<string|null>, signal?: AbortSignal, campaign = "", limit = 50, offset = 0) => getJson<Notification[]>(token, `notifications/?${new URLSearchParams({ ...(campaign ? {campaign} : {}), limit: String(limit), offset: String(offset) })}`, signal);
+export const getPayments = (token: () => Promise<string|null>, signal?: AbortSignal, campaign = "", limit = 50, offset = 0) => {
+  const query = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (campaign) query.set("campaign", campaign);
+  return getJson<Payment[]>(token, `billing/payments/?${query}`, signal);
+};
 export const getPaymentInstructions = (token: () => Promise<string|null>, signal?: AbortSignal) => getJson<PaymentInstructions>(token, "billing/instructions/", signal);
 export const getInquiries = (token: () => Promise<string|null>, signal?: AbortSignal) => getJson<Inquiry[]>(token, "candidate/inquiries/", signal);
 export const getPublicContact = (signal?: AbortSignal) => fetch(`${apiUrl}/api/v1/public/contact/`, { cache: "no-store", signal }).then(async response => { if (!response.ok) throw await responseError(response, "Contact options are unavailable."); return await response.json() as PublicContact; });

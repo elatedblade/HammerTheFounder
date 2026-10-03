@@ -36,6 +36,7 @@ x-backend: &backend
     UPI_PAYEE_NAME: ${UPI_PAYEE_NAME:-}
     UPI_INSTRUCTIONS: ${UPI_INSTRUCTIONS:-}
     WHATSAPP_BUSINESS_NUMBER: ${WHATSAPP_BUSINESS_NUMBER:-}
+    SUPPORT_EMAIL: ${SUPPORT_EMAIL:-}
   depends_on:
     postgres:
       condition: service_healthy

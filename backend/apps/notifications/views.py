@@ -7,6 +7,7 @@ from apps.billing.services import filter_campaign
 from .models import Notification, NotificationTemplate
 from .serializers import NotificationSerializer, NotificationCreateSerializer, TemplateSerializer
 from .services import create_notification, dispatch_notification
+from apps.operations.common import bounded
 
 
 class NotificationsView(APIView):
@@ -17,7 +18,10 @@ class NotificationsView(APIView):
         items = filter_campaign(items, request)
         if request.user.role == "CLIENT":
             items = items.filter(status="SENT")
-        return Response(NotificationSerializer(items[:200], many=True).data)
+        params = {"limit": "200", **request.query_params.dict()}
+        response = Response(NotificationSerializer(bounded(items.order_by("-created_at", "-id"), params), many=True).data)
+        response["Cache-Control"] = "no-store"
+        return response
 
     def post(self, request):
         serializer = NotificationCreateSerializer(data=request.data)

@@ -24,9 +24,9 @@ export function Details({ row }: { row: RecordData }) {
   return <dl className="details">{Object.entries(row).map(([key, value]) => <div key={key}><dt>{humanize(key)}</dt><dd>{display(value)}</dd></div>)}</dl>;
 }
 
-export function RecordTable({ rows, columns, selected, onSelect }: { rows: RecordData[]; columns: string[]; selected?: string; onSelect: (row: RecordData) => void }) {
+export function RecordTable({ rows, columns, selected, onSelect }: { rows: RecordData[]; columns: string[]; selected?: string; onSelect?: (row: RecordData) => void }) {
   if (!rows.length) return <p className="empty">No records in this view. Try changing the filter or campaign scope, or create a record where available.</p>;
-  return <div className="table-scroll"><table><thead><tr>{columns.map((column) => <th key={column} scope="col">{humanize(column)}</th>)}<th scope="col">Details</th></tr></thead><tbody>{rows.map((row) => <tr key={String(row.id)} className={selected === String(row.id) ? "selected" : ""}>{columns.map((column) => <td key={column}>{column === "status" || column.endsWith("status") ? <span className="badge">{display(row[column])}</span> : <span className="cell-content">{display(row[column])}</span>}</td>)}<td><button className="secondary" onClick={() => onSelect(row)} aria-label={`Open ${display(row.name ?? row.full_name ?? row.title ?? row.id)}`}>Open</button></td></tr>)}</tbody></table></div>;
+  return <div className="table-scroll"><table><thead><tr>{columns.map((column) => <th key={column} scope="col">{humanize(column)}</th>)}{onSelect && <th scope="col">Details</th>}</tr></thead><tbody>{rows.map((row) => <tr key={String(row.id)} className={selected === String(row.id) ? "selected" : ""}>{columns.map((column) => <td key={column}>{column === "status" || column.endsWith("status") ? <span className="badge">{display(row[column])}</span> : <span className="cell-content">{display(row[column])}</span>}</td>)}{onSelect && <td><button className="secondary" onClick={() => onSelect(row)} aria-label={`Open ${display(row.name ?? row.full_name ?? row.title ?? row.id)}`}>Open</button></td>}</tr>)}</tbody></table></div>;
 }
 
 export function MutationForm({ title, fields, initial = {}, lookups, submitLabel = "Save", confirm, onSubmit, onCancel }: {

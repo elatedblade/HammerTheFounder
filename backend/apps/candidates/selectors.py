@@ -15,3 +15,13 @@ def get_operational_candidates(user):
     if administrator(user):
         return queryset
     return queryset.filter(Q(campaigns__assigned_to=user) | Q(campaigns__assigned_to__isnull=True, campaigns__status__in=("DRAFT", "ONBOARDING", "READY")) | Q(campaigns__isnull=True)).distinct()
+
+
+def get_visible_candidate_ids(user):
+    """Candidate scope to intersect with any candidate-filtered history query."""
+    from apps.campaigns.selectors import get_visible_campaigns
+    from apps.operations.common import operational
+
+    if operational(user):
+        return get_operational_candidates(user).values("pk")
+    return get_visible_campaigns(user).values("candidate_id")

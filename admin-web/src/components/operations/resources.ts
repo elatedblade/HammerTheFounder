@@ -42,7 +42,7 @@ export const jobs: Resource = { title: "Jobs", path: "jobs/", paginated: true, c
 export const applications: Resource = {
   title: "Applications", path: "applications/", paginated: true, statusOptions: Object.keys(applicationTransitions), columns: ["company_name", "job_title", "status", "in_progress_at", "submitted_at", "failed_at", "interview_scheduled_at", "source_reference"], scoped: true,
   description: "Record manual submissions and their outcomes. This workspace never submits applications externally.",
-  fields: applicationFields, editFields: [notes, text("source_reference", "Submission/source reference")],
+  editFields: [notes, text("source_reference", "Submission/source reference")],
   actions: [{ label: "Update application status", route: "transition/", when: (row) => Boolean(applicationTransitions[String(row.status)]?.length), fields: (row) => [choose("status", "New status", applicationTransitions[String(row.status)] ?? []), { ...notes, requiredWhen: (values) => values.status === "APPLICATION_FAILED", help: "Failure requires an explanation for the server-generated human review task." }, { ...interviewDate, visibleWhen: (values) => values.status === "INTERVIEW_SCHEDULED", required: true }], confirm: "Record this application outcome? For submission and interview outcomes, confirm the external action has already occurred." }, { label: "Schedule interview", route: "transition/", body: { status: "INTERVIEW_SCHEDULED" }, when: (row) => row.status === "INTERVIEW", fields: [{ ...interviewDate, required: true }, notes], confirm: "Schedule this interview and record its agreed future time? The API will create an interview confirmation task." }, { label: "Reschedule interview", route: "", method: "PATCH", when: (row) => row.status === "INTERVIEW_SCHEDULED", fields: [{ ...interviewDate, required: true }, notes], confirm: "Save this rescheduled future interview time? Confirm the change is agreed with the candidate and interviewer." }],
 };
 export const contacts: Resource = { title: "Contacts", path: "contacts/", paginated: true, columns: ["name", "company_name", "title", "email", "source"], fields: contactFields, editFields: contactFields };
@@ -60,7 +60,7 @@ export const tasks: Resource = {
   actions: [{ label: "Claim task", route: "claim/", when: (row) => row.status === "OPEN", confirm: "Assign this task to your account?" }, { label: "Complete task", route: "complete/", fields: [notes], when: (row) => row.status === "CLAIMED", confirm: "Mark this task completed? Confirm its work has been finished." }],
 };
 export const payments: Resource = {
-  title: "Manual payments", path: "billing/payments/", scoped: true, columns: ["amount", "currency", "status", "reference", "verified_at"], description: "Record manual receipts. Only administrators can verify or record refunds; HTF does not move funds.",
+  title: "Manual payments", path: "billing/payments/", scoped: true, paginated: true, pageSize: 200, columns: ["amount", "currency", "status", "reference", "verified_at"], description: "Record manual receipts. Showing a paged array; only administrators can verify or record refunds; HTF does not move funds.",
   fields: [campaign, { name: "amount", label: "Amount", type: "number", required: true, min: 0.01 }, choose("currency", "Currency", ["INR"]), notes],
   actions: [{ label: "Verify receipt", route: "verify/", admin: true, fields: [text("reference", "Verified receipt reference", true), notes], when: (row) => row.status === "PENDING", confirm: "Confirm you independently checked the receipt and amount?" }, { label: "Record failed payment", route: "transition/", admin: true, body: { status: "FAILED" }, fields: [notes], when: (row) => row.status === "PENDING" }, { label: "Record refund", route: "transition/", admin: true, body: { status: "REFUNDED" }, fields: [notes], when: (row) => row.status === "VERIFIED", confirm: "Confirm the refund has already been performed outside HTF? This only records the refund." }],
 };
@@ -77,7 +77,7 @@ export const inquiries: Resource = {
   ],
 };
 export const notifications: Resource = {
-  title: "Transactional communications", path: "notifications/", scoped: true, columns: ["channel", "status", "subject", "created_at", "sent_at"],
+  title: "Transactional communications", path: "notifications/", scoped: true, paginated: true, pageSize: 200, columns: ["channel", "status", "subject", "created_at", "sent_at"],
   description: "Create a notification, then explicitly send transactional email to the campaign customer's saved email or record a WhatsApp message sent manually. Not for cold outreach. Reconcile failed/unknown delivery with the provider before creating another draft.",
   fields: [campaign, choose("channel", "Channel", ["EMAIL", "WHATSAPP"]), text("recipient", "Recipient address / phone", true), text("subject", "Subject"), { name: "body", label: "Body", type: "textarea", required: true }],
   actions: [{ label: "Send transactional email", route: "send/", when: (row) => row.channel === "EMAIL" && row.status === "DRAFT", confirm: "Send this transactional email to the saved recipient now? This is an external action." }, { label: "Record manual WhatsApp send", route: "mark-sent/", when: (row) => row.channel === "WHATSAPP" && row.status === "DRAFT", confirm: "Confirm this WhatsApp message has already been sent manually?" }],

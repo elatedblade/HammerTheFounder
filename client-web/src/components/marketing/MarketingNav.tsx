@@ -33,14 +33,14 @@ export default function MarketingNav() {
         <details className={styles.mobileMenu}>
           <summary aria-label="Open navigation">Menu</summary>
           <nav className={styles.mobileLinks} aria-label="Mobile navigation">
-            <a href="#plans">Plans</a>
+             <Link href="/plans">Plans</Link>
             <a href="#process">How it works</a>
             <a href="#faq">FAQ</a>
             {account}
           </nav>
         </details>
         <nav className={styles.desktopLinks} aria-label="Primary navigation">
-          <a href="#plans">Plans</a>
+           <Link href="/plans">Plans</Link>
           <a href="#process">How it works</a>
           <a href="#faq">FAQ</a>
           {account}

@@ -79,9 +79,50 @@ def test_inactive_client_cannot_create(settings):
 @pytest.mark.parametrize("number", ["", "0", "01234567890", "91987", "9" * 16, "١٢٣٤٥٦٧٨٩", "919876543210/evil", "+919876543210"])
 def test_public_contact_does_not_claim_invalid_destinations_are_ready(settings, number):
     settings.WHATSAPP_BUSINESS_NUMBER = number
+    settings.SUPPORT_EMAIL = ""
     response = APIClient().get(reverse("inquiries:public-contact"))
     assert response.status_code == 200
-    assert response.data == {"whatsapp_configured": False}
+    assert response.data == {"whatsapp_configured": False, "support_email": None}
+    assert "no-store" in response["Cache-Control"].split(", ")
+
+
+@pytest.mark.parametrize("email", [
+    "", " ", None, 123, "not-an-email", "mailto:support@example.com",
+    "Support <support@example.com>", '"support"@example.com',
+    "support@example.com,other@example.com", "support@example.com;other@example.com",
+    "support@example.com?subject=Injected", "support@example.com#fragment",
+    "support%40example.com", "support@example.com%0d%0aBcc:other@example.com",
+    "support@example.com\r\nBcc:other@example.com", "support@example.com\n",
+    "support@example.com\r", "support@example.com\t", "support\x00@example.com",
+    "support\x7f@example.com", "support\x85@example.com", "support\u200b@example.com",
+    " support@example.com", "support@example.com ", "support@",
+    "support?tag@example.com", "support#tag@example.com", "support%tag@example.com",
+])
+def test_public_contact_invalid_support_email_fails_closed(settings, email):
+    settings.WHATSAPP_BUSINESS_NUMBER = "15555550123"
+    settings.SUPPORT_EMAIL = email
+    response = APIClient().get(reverse("inquiries:public-contact"))
+    assert response.status_code == 200
+    assert response.data == {"whatsapp_configured": True, "support_email": None}
+    assert "no-store" in response["Cache-Control"].split(", ")
+
+
+@pytest.mark.parametrize("email", ["support@example.com", "support+customer@example.co.uk"])
+def test_public_contact_returns_only_configured_public_fields_without_authentication(settings, email):
+    settings.WHATSAPP_BUSINESS_NUMBER = "15555550123"
+    settings.SUPPORT_EMAIL = email
+    settings.RESEND_FROM_EMAIL = "notification-only@example.com"
+    settings.RESEND_API_KEY = "private-test-key"
+    client = APIClient()
+    # Invalid bearer tokens must not prevent anonymous access to public metadata.
+    client.credentials(HTTP_AUTHORIZATION="Bearer invalid-test-token")
+    response = client.get(reverse("inquiries:public-contact"))
+    assert response.status_code == 200
+    assert response.data == {"whatsapp_configured": True, "support_email": email}
+    assert "no-store" in response["Cache-Control"].split(", ")
+    assert b"private-test-key" not in response.content
+    assert b"notification-only" not in response.content
+    assert b"15555550123" not in response.content
 
 
 @override_settings(WHATSAPP_BUSINESS_NUMBER="15555550123")

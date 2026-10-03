@@ -1,9 +1,12 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from datetime import timedelta
 import re
 import uuid
+import unicodedata
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.exceptions import PermissionDenied
 from apps.candidates.models import CandidateProfile
@@ -46,6 +49,26 @@ def whatsapp_configured():
 
 def valid_whatsapp_number(value):
     return bool(isinstance(value, str) and re.fullmatch(r"[1-9][0-9]{7,14}", value, flags=re.ASCII))
+
+
+def support_email():
+    """Return only a plain mailbox safe to use as a mailto destination."""
+    value = getattr(settings, "SUPPORT_EMAIL", "")
+    if not isinstance(value, str) or not value:
+        return None
+    # Reject before Django validation: quoted mailboxes, display names, controls
+    # and URL/header delimiters must not become mailto parameters or recipients.
+    if any(
+        char.isspace() or unicodedata.category(char).startswith("C")
+        or char in '?#%,;<>"\\'
+        for char in value
+    ):
+        return None
+    try:
+        validate_email(value)
+    except DjangoValidationError:
+        return None
+    return value
 
 
 def create_inquiry(*, user, plan):

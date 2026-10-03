@@ -10,7 +10,7 @@ export function LoadingSkeleton() {
 
 export function AppHeader() {
   const pathname = usePathname();
-  return <header className="app-topbar"><Link className="brand" href="/" aria-label="Hammer The Founder home"><span className="brand-mark">H</span><span className="brand-name">Hammer The Founder</span></Link><nav className="signed-in-nav" aria-label="Customer navigation">{[["/", "Home"], ["/profile", "Profile"], ["/dashboard", "Dashboard"]].map(([href,label]) => <Link key={href} href={href} aria-current={pathname === href ? "page" : undefined}>{label}</Link>)}</nav><div className="topbar-right"><UserButton /></div></header>;
+  return <header className="app-topbar"><Link className="brand" href="/" aria-label="Hammer The Founder home"><span className="brand-mark">H</span><span className="brand-name">Hammer The Founder</span></Link><nav className="signed-in-nav" aria-label="Customer navigation">{[["/", "Home"], ["/profile", "Profile"], ["/dashboard", "Dashboard"], ["/plans", "Plans"]].map(([href,label]) => <Link key={href} href={href} aria-current={pathname === href ? "page" : undefined}>{label}</Link>)}</nav><div className="topbar-right"><UserButton /></div></header>;
 }
 
 export function SetupState() {

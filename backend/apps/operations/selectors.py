@@ -10,6 +10,7 @@ from apps.contacts.models import Contact
 from apps.outreach.models import Outreach, OutreachTemplate, Suppression
 from apps.tasks.models import HumanTask
 from apps.events.models import Event
+from apps.candidates.selectors import get_visible_candidate_ids
 
 
 MODELS = {"companies": Company, "jobs": Job, "applications": Application, "contacts": Contact, "outreach": Outreach, "suppression": Suppression, "templates": OutreachTemplate, "tasks": HumanTask, "events": Event, "audit": Event}
@@ -35,6 +36,14 @@ def records(user, kind, params=None, campaign_id=None):
                 raise ValidationError({"campaign": "Expected a UUID."})
             visible_campaign(user, selected)
             queryset = queryset.filter(campaign_id=selected)
+        if "candidate" in params and kind == "applications":
+            try:
+                candidate_id = int(params["candidate"])
+            except (TypeError, ValueError):
+                raise ValidationError({"candidate": "Expected a positive integer."})
+            if candidate_id < 1:
+                raise ValidationError({"candidate": "Expected a positive integer."})
+            queryset = queryset.filter(candidate_id=candidate_id, candidate_id__in=get_visible_candidate_ids(user))
     if kind == "events" and not operational(user):
         queryset = queryset.filter(client_visible=True)
     if params.get("status") and kind in {"jobs", "applications", "outreach", "tasks"}:

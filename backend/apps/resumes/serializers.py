@@ -20,6 +20,7 @@ class ResumeSerializer(serializers.ModelSerializer):
             "file_size",
             "upload_status",
             "parse_status",
+            "parse_error_code",
             "version",
             "created_at",
             "updated_at",
@@ -67,3 +68,24 @@ class ResumeUploadRequestSerializer(serializers.Serializer):
                 {"filename": "The filename extension must match the content type."}
             )
         return attrs
+
+
+class OperationalParsedTextSerializer(serializers.ModelSerializer):
+    """Separate operational review DTO; never included in client metadata lists."""
+    text = serializers.SerializerMethodField()
+    truncated = serializers.SerializerMethodField()
+    max_chars = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Resume
+        fields = ("id", "parse_status", "text", "truncated", "max_chars", "parsed_at")
+        read_only_fields = fields
+
+    def get_text(self, instance):
+        return instance.extracted_text[:32000]
+
+    def get_truncated(self, instance):
+        return len(instance.extracted_text) > 32000
+
+    def get_max_chars(self, instance):
+        return 32000

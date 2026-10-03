@@ -59,6 +59,12 @@ function statusTone(status: CampaignStatus): "positive" | "warning" | "danger" |
   return "neutral";
 }
 
+const availablePlans = [
+  { name: "Normal Apply", code: "NORMAL_APPLY", description: "Managed job applications." },
+  { name: "Cold Apply", code: "COLD_APPLY", description: "Manual founder/CXO outreach." },
+  { name: "Full-Throttle Sprint", code: "FULL_THROTTLE", description: "Both managed applications and manual outreach." },
+] as const;
+
 function CampaignCard({ campaign }: { campaign: Campaign }) {
   const trialEnd = formatDate(campaign.trial_end_date);
   const startDate = formatDate(campaign.start_date);
@@ -123,7 +129,7 @@ export default function CampaignsSection({ getToken }: { getToken: () => Promise
   }, [refreshCampaigns]);
 
   return (
-    <section className="panel campaign-panel" aria-labelledby="campaigns-heading">
+    <section id="campaigns" className="panel campaign-panel" aria-labelledby="campaigns-heading">
       <div className="panel-heading">
         <div><span className="eyebrow">Your workspace</span><h2 id="campaigns-heading">Campaigns</h2></div>
         <button className="button button-secondary button-small" type="button" disabled={loading} onClick={() => void refreshCampaigns()}>
@@ -132,7 +138,27 @@ export default function CampaignsSection({ getToken }: { getToken: () => Promise
       </div>
       <p className="muted">Your campaign details will appear here once HTF has set up your next search.</p>
 
+      <section className="available-plans" aria-labelledby="available-plans-heading">
+        <div className="available-plans-heading">
+          <div>
+            <span className="eyebrow">Service options</span>
+            <h3 id="available-plans-heading">Available service plans</h3>
+          </div>
+          <p>Plans are reviewed and activated by the HTF team.</p>
+        </div>
+        <ul className="available-plans-list">
+          {availablePlans.map((plan) => (
+            <li className="available-plan-card" key={plan.code}>
+              <strong>{plan.name}</strong>
+              <span>{plan.code}</span>
+              <p>{plan.description}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       <div className="campaign-records" aria-live="polite">
+        <h3 className="campaign-records-heading">Your campaigns</h3>
         {loading ? <p className="muted campaign-loading" role="status">Loading your campaigns…</p> : null}
         {error ? (
           <div className="notice notice-error campaign-error" role="alert">
@@ -142,8 +168,8 @@ export default function CampaignsSection({ getToken }: { getToken: () => Promise
         ) : null}
         {!loading && !error && campaigns.length === 0 ? (
           <div className="campaign-empty">
-            <strong>No campaign yet</strong>
-            <p>HTF will create your campaign after onboarding is complete. You can keep refining your profile in the meantime.</p>
+            <strong>No campaign assigned yet</strong>
+            <p>No campaign is assigned to your workspace yet. An HTF operator creates and activates one after reviewing your profile and onboarding details.</p>
           </div>
         ) : null}
         {!loading && !error && campaigns.length > 0 ? (

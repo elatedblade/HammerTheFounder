@@ -51,12 +51,26 @@ class CandidateProfile(models.Model):
         default=RemotePreference.UNSPECIFIED,
     )
     profile_version = models.PositiveIntegerField(default=1)
+    target_industries = models.JSONField(default=list, validators=[validate_profile_list])
+    expected_ctc_min = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    expected_ctc_max = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    work_authorization = models.CharField(max_length=200, blank=True)
+    sponsorship_requirement = models.CharField(max_length=200, blank=True)
+    notice_period = models.CharField(max_length=200, blank=True)
+    preferences_json = models.JSONField(default=dict)
+    review_status = models.CharField(max_length=24, choices=[("PENDING", "Pending"), ("APPROVED", "Approved"), ("CHANGES_REQUESTED", "Changes requested")], default="PENDING")
+    review_notes = models.TextField(max_length=10000, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="reviewed_candidates")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ("-created_at",)
         constraints = [
+            models.CheckConstraint(condition=models.Q(expected_ctc_min__isnull=True) | models.Q(expected_ctc_min__gte=0), name="candidate_ctc_min_nonnegative"),
+            models.CheckConstraint(condition=models.Q(expected_ctc_max__isnull=True) | models.Q(expected_ctc_max__gte=0), name="candidate_ctc_max_nonnegative"),
+            models.CheckConstraint(condition=models.Q(expected_ctc_min__isnull=True) | models.Q(expected_ctc_max__isnull=True) | models.Q(expected_ctc_max__gte=models.F("expected_ctc_min")), name="candidate_ctc_ordered"),
             models.CheckConstraint(
                 condition=models.Q(profile_version__gte=1),
                 name="candidate_profile_version_positive",

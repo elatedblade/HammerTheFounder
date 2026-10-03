@@ -1,11 +1,12 @@
 "use client";
 
-import { SignInButton, UserButton, useAuth } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, UserButton, useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ApiRequestError,
+  apiFieldErrors,
   basicsComplete,
   emptyCandidateProfileDraft,
   getCandidateProfile,
@@ -19,6 +20,8 @@ import {
 } from "../lib/api";
 import CampaignsSection from "./campaigns-section";
 import ResumeSection from "./resume-section";
+import CandidateProgress, { readable } from "./candidate-progress";
+import IntakeFields from "./intake-fields";
 
 type LoadState = "loading" | "ready" | "error";
 type SaveState = "idle" | "saving" | "saved" | "error" | "conflict";
@@ -59,12 +62,18 @@ function validateDraft(draft: CandidateProfileDraft): string | null {
   for (const [label, values] of [
     ["Target roles", draft.target_roles],
     ["Preferred locations", draft.preferred_locations],
+    ["Target industries", draft.target_industries ?? []],
   ] as const) {
     if (values.length > MAX_LIST_ITEMS) return `${label} can include up to ${MAX_LIST_ITEMS} items.`;
     if (values.some((value) => value.length > MAX_LIST_ITEM)) {
       return `${label} entries must be ${MAX_LIST_ITEM} characters or fewer.`;
     }
   }
+  for (const value of [draft.expected_ctc_min, draft.expected_ctc_max]) {
+    if (value !== null && value !== undefined && (!Number.isFinite(value) || value < 0 || value > 999999999999.99)) return "Compensation must be a non-negative number no greater than 999,999,999,999.99.";
+  }
+  if (draft.expected_ctc_min != null && draft.expected_ctc_max != null && draft.expected_ctc_min > draft.expected_ctc_max) return "Minimum compensation cannot exceed maximum compensation.";
+  if ((draft.expected_ctc_min != null || draft.expected_ctc_max != null) && !(typeof draft.preferences_json?.compensation_units === "string" && draft.preferences_json.compensation_units.trim())) return "Add compensation currency and units when specifying an expected amount.";
   return null;
 }
 
@@ -275,7 +284,7 @@ export function SetupState() {
     <StateCard
       eyebrow="Authentication setup"
       title="Connect Clerk to open your workspace"
-      body="Set NEXT_PUBLIC_AUTH_MODE=clerk and NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY in the local environment, then restart the client service."
+      body="Configure Clerk for this client, then restart the client service."
     />
   );
 }
@@ -374,6 +383,7 @@ function ProfileForm({
   onEdit,
   onReload,
   onRetry,
+  fieldErrors,
 }: {
   draft: CandidateProfileDraft;
   setDraft: React.Dispatch<React.SetStateAction<CandidateProfileDraft>>;
@@ -385,6 +395,7 @@ function ProfileForm({
   onEdit: () => void;
   onReload: () => void;
   onRetry: () => void;
+  fieldErrors: Record<string, string>;
 }) {
   const [validationError, setValidationError] = useState<string | null>(null);
   const update = <K extends keyof CandidateProfileDraft>(key: K, value: CandidateProfileDraft[K]) => {
@@ -402,6 +413,7 @@ function ProfileForm({
       experience_summary: draft.experience_summary.trim(),
       target_roles: trimList(draft.target_roles),
       preferred_locations: trimList(draft.preferred_locations),
+      target_industries: trimList(draft.target_industries ?? []),
     };
     const issue = validateDraft(normalized);
     if (issue) {
@@ -436,6 +448,8 @@ function ProfileForm({
         </div>
       ) : null}
       {validationError ? <div className="notice notice-error" role="alert"><strong>{validationError}</strong></div> : null}
+      {Object.keys(fieldErrors).length > 0 ? <ul className="api-field-errors" role="alert">{Object.entries(fieldErrors).map(([field, message]) => <li key={field}><strong>{readable(field)}:</strong> {message}</li>)}</ul> : null}
+      <p className="muted">Profile review: <strong>{profile?.review_status ? readable(profile.review_status) : "Not reviewed yet"}</strong>. {profile?.review_status === "CHANGES_REQUESTED" ? "Contact HTF for requested changes, then update your profile below." : "HTF reviews your saved information before campaign execution."}</p>
 
       <div className="form-section">
         <div className="section-intro"><span className="section-number">01</span><div><h3>Basics</h3><p>Start with the details people will use to place you.</p></div></div>
@@ -466,7 +480,7 @@ function ProfileForm({
         </Field>
       </div>
 
-      <div className="form-section form-section-last">
+      <div className="form-section">
         <div className="section-intro"><span className="section-number">03</span><div><h3>Direction</h3><p>Point toward the opportunities that feel worth exploring.</p></div></div>
         <Field label="Target roles" htmlFor="target-roles" error={targetRolesIssue} hint={targetRolesIssue ? undefined : "Type to search suggestions, then press Enter or choose an option · up to 10"}>
           <TagCombobox id="target-roles" label="target roles" values={draft.target_roles} onChange={(values) => update("target_roles", values)} suggestions={ROLE_SUGGESTIONS} placeholder="e.g. Product Designer" />
@@ -476,6 +490,7 @@ function ProfileForm({
         </Field>
       </div>
 
+      <IntakeFields draft={draft} update={update} errors={fieldErrors}/>
       <div className="form-footer">
         <p className="save-help">{profile ? "Your changes are only sent when you save." : "It’s okay to save an unfinished draft."}</p>
         <button className="button button-primary" type="submit" disabled={isSaving}>
@@ -494,6 +509,7 @@ function CandidateWorkspace({ getToken }: { getToken: () => Promise<string | nul
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const versionRef = useRef(0);
   const saveControllerRef = useRef<AbortController | null>(null);
   const profileControllerRef = useRef<AbortController | null>(null);
@@ -536,6 +552,7 @@ function CandidateWorkspace({ getToken }: { getToken: () => Promise<string | nul
   const save = useCallback(async (nextDraft?: CandidateProfileDraft) => {
     setSaveState("saving");
     setError(null);
+    setFieldErrors({});
     saveControllerRef.current?.abort();
     const controller = new AbortController();
     saveControllerRef.current = controller;
@@ -551,6 +568,7 @@ function CandidateWorkspace({ getToken }: { getToken: () => Promise<string | nul
       if (requestError instanceof ApiRequestError && requestError.status === 409) {
         setSaveState("conflict");
       } else {
+        setFieldErrors(apiFieldErrors(requestError));
         setError(errorMessage(requestError, "We could not save your profile."));
         setSaveState("error");
       }
@@ -590,12 +608,14 @@ function CandidateWorkspace({ getToken }: { getToken: () => Promise<string | nul
       <AppHeader />
       <div className="content-wrap">
         <div className="page-intro">
-          <span className="eyebrow">Candidate profile</span>
-          <h1>Make your next move legible<span className="accent-dot">.</span></h1>
-          <p>Tell us enough about your experience and direction to make the right opportunities easier to recognize.</p>
+          <span className="eyebrow">Candidate workspace</span>
+          <h1>Your next move, in focus<span className="accent-dot">.</span></h1>
+          <p>Follow your search, review updates from HTF, and keep your profile ready for the right opportunities.</p>
         </div>
-        <div className="workspace-grid">
-          <ProfileForm draft={draft} setDraft={setDraft} profile={profile} saveState={saveState} savedAt={savedAt} error={error} onSave={save} onEdit={() => setSaveState((state) => state === "saved" ? "idle" : state)} onReload={reloadSavedVersion} onRetry={() => save()} />
+        <nav className="workspace-jump" aria-label="Workspace sections"><a href="#progress">Search progress</a><a href="#profile">Profile intake</a><a href="#documents">Resume</a><a href="#campaigns">Campaign details</a></nav>
+        <CandidateProgress getToken={getToken}/>
+        <div className="workspace-grid" id="profile">
+          <ProfileForm draft={draft} setDraft={setDraft} profile={profile} saveState={saveState} savedAt={savedAt} error={error} fieldErrors={fieldErrors} onSave={save} onEdit={() => {setFieldErrors({}); setSaveState((state) => state === "saved" ? "idle" : state);}} onReload={reloadSavedVersion} onRetry={() => save()} />
           <ProgressRail draft={draft} profile={profile} />
         </div>
         <ResumeSection getToken={getToken} />
@@ -635,7 +655,10 @@ export default function AuthenticatedHome() {
   if (!isSignedIn) {
     return (
       <StateCard eyebrow="Hammer The Founder" title="Your next move, with a clearer starting point" body="Sign in to shape your candidate profile and keep your direction in one place.">
-        <SignInButton mode="modal"><button className="button button-primary" type="button">Sign in</button></SignInButton>
+        <div className="auth-actions">
+          <SignInButton mode="modal"><button className="button button-primary" type="button">Sign in</button></SignInButton>
+          <SignUpButton mode="modal"><button className="button button-secondary" type="button">Create account</button></SignUpButton>
+        </div>
       </StateCard>
     );
   }

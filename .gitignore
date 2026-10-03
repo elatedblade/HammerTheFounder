@@ -19,6 +19,8 @@ node_modules/
 out/
 *.tsbuildinfo
 npm-debug.log*
+playwright-report/
+test-results/
 
 # Editors and operating systems
 .DS_Store

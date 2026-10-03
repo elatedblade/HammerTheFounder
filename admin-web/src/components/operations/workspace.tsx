@@ -7,13 +7,13 @@ import CandidatesPanel from "./candidates-panel";
 import CampaignsPanel from "./campaigns-panel";
 import Dashboard from "./dashboard";
 import ResourcePanel from "./resource-panel";
-import { applications, companies, contacts, jobs, notificationTemplates, notifications, outreach, outreachTemplates, payments, suppression, tasks } from "./resources";
+import { applications, companies, contacts, inquiries, jobs, notificationTemplates, notifications, outreach, outreachTemplates, payments, suppression, tasks } from "./resources";
 import AiPanel from "./ai-panel";
 import ReviewTasks from "./review-tasks";
 import { ErrorMessage } from "./ui";
 import { display, isAdmin, type Option, type RecordData, type Resource, type WorkspaceContext } from "./types";
 
-const tabs = ["Overview", "Candidates", "Campaigns", "Applications", "Outreach", "Tasks", "Payments", "Communications", "AI proposals"] as const;
+const tabs = ["Overview", "Candidates", "Inquiries", "Campaigns", "Applications", "Outreach", "Tasks", "Payments", "Communications", "AI proposals"] as const;
 type Tab = typeof tabs[number];
 
 function ResourceGroup({ resources, context }: { resources: Resource[]; context: WorkspaceContext }) {
@@ -55,6 +55,7 @@ export default function OperationsWorkspace({ user, api }: { user: CurrentUser; 
   return <main className="ops-workspace"><header className="workspace-header"><div><p className="eyebrow">Hammer The Founder</p><h1>Operations workspace</h1><p className="muted">{user.email} <span className="badge">{user.role}</span></p></div><UserButton /></header><div className="workspace-toolbar"><label htmlFor="campaign-scope">Campaign scope<select id="campaign-scope" value={campaign} onChange={(event) => setCampaign(event.target.value)} disabled={lookupLoading}><option value="">All visible campaigns</option>{lookups.campaigns?.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><p className="muted">Manual-first operations. No applications, cold outreach, payments or AI runs execute automatically.</p></div>{Object.keys(lookupErrors).length > 0 && <details className="lookup-errors"><summary>Some form options could not load ({Object.keys(lookupErrors).join(", ")})</summary>{Object.entries(lookupErrors).map(([key, error]) => <div key={key}><strong>{key}</strong><ErrorMessage error={error} /></div>)}<button className="secondary" onClick={context.refresh}>Retry loading options</button></details>}<nav className="workspace-tabs" aria-label="Operations workspace">{tabs.map((name) => <button key={name} className={tab === name ? "active" : ""} aria-current={tab === name ? "page" : undefined} onClick={() => setTab(name)}>{name}</button>)}</nav><div className="workspace-content" key={tab}>
       {tab === "Overview" && <Dashboard context={context} />}
       {tab === "Candidates" && <CandidatesPanel context={context} />}
+      {tab === "Inquiries" && <ResourcePanel key="inquiries" resource={inquiries} context={context} />}
       {tab === "Campaigns" && <CampaignsPanel context={context} />}
       {tab === "Applications" && <ResourceGroup resources={[applications, companies, jobs]} context={context} />}
       {tab === "Outreach" && <ResourceGroup resources={[outreach, contacts, suppression, outreachTemplates]} context={context} />}

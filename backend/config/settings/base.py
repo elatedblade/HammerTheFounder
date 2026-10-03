@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "apps.billing",
     "apps.notifications",
     "apps.ai",
+    "apps.inquiries",
 ]
 
 MIDDLEWARE = [
@@ -138,6 +139,7 @@ CELERY_RESULT_SERIALIZER = "json"
 UPI_ID = os.getenv("UPI_ID", "")
 UPI_PAYEE_NAME = os.getenv("UPI_PAYEE_NAME", "")
 UPI_INSTRUCTIONS = os.getenv("UPI_INSTRUCTIONS", "")
+WHATSAPP_BUSINESS_NUMBER = os.getenv("WHATSAPP_BUSINESS_NUMBER", "").strip()
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "")
 OMNIROUTE_BASE_URL = os.getenv("OMNIROUTE_BASE_URL", "")

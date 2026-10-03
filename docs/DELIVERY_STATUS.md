@@ -129,3 +129,53 @@ access denied. The earlier S3-unverified note above is superseded for these chec
 The actual authenticated candidate browser upload still requires acceptance.
 One synthetic PDF remains because cleanup lacked DeleteObject permission; its
 exact key is documented in `S3_SETUP.md`. No permission escalation was performed.
+
+## Three-page customer journey revision (2026-10-03)
+
+Revised plan: `docs/new by harshit.md`. The original implementation plan is
+unchanged. The customer app now has a public marketing landing `/`, editable
+profile/resumes `/profile`, and progress-focused `/dashboard`. `/workspace`
+redirects to the dashboard. Clerk sign-in/up remain supporting routes.
+
+Marketing presentation and editable copy live in
+`client-web/src/components/marketing/` and `client-web/src/lib/marketing.ts`;
+profile, dashboard and API logic are separate. The page describes Normal Apply,
+Cold Apply and Full-Throttle Sprint without fabricated prices or social proof.
+
+Plan intent is preserved through sign-in. Explicit confirmation saves an owned
+inquiry and opens a validated business WhatsApp URL. Existing open/contacted
+inquiries are reused; internal notes are not customer-visible. Admin has an
+Inquiries view, manual contacted/closed actions and idempotent conversion to a
+draft campaign. Conversion does not activate or charge a campaign. Missing
+WhatsApp configuration returns an honest unavailable state before database writes.
+
+### Checks actually completed
+
+- 147 backend tests passed against disposable PostgreSQL, including inquiry
+  ownership, role/assignment boundaries, retry deduplication, private audit,
+  invalid destinations, conversion and no automatic activation/payment.
+- All migrations applied on disposable PostgreSQL; migration-drift and Django
+  system checks passed.
+- Both frontends passed TypeScript, ESLint and production builds.
+- Two Node helper tests passed for safe auth redirects and WhatsApp URL guards.
+- Three Playwright anonymous tests passed: public plan links, mobile menu/FAQ/
+  overflow, and separate routes/legacy redirect. These deliberately run without
+  Clerk credentials; they do NOT establish live authenticated end-to-end acceptance.
+- EC2 Compose interpolation and evaluation settings passed synthetic checks;
+  backup/restore scripts passed shell syntax checks. No EC2 instance was launched.
+- Local Docker stack rebuilt and all six services are running. A private database
+  backup was saved outside the repository before applying the three inquiry
+  migrations. HTTP checks returned 200 for landing/admin/public contact, protected
+  customer routes redirected to sign-in, and unauthenticated inquiries returned 401.
+
+### Remaining inputs and launch gates
+
+- Owner must supply `WHATSAPP_BUSINESS_NUMBER` (country code plus digits).
+- Complete a real CLIENT sign-in → inquiry → WhatsApp → profile/resume → ADMIN
+  conversion/start → customer progress journey. No real message was sent by tests.
+- EC2 account/instance/access and cost eligibility remain unverified. Follow
+  `docs/EC2_DEPLOYMENT.md` for SSH-tunneled private evaluation without a domain.
+  Public production requires HTTPS, appropriate Clerk configuration and the
+  previously documented backup/privacy/provider/security launch checks.
+- Existing dependency advisories, live Resend/OmniRoute verification and earlier
+  documented limitations are not superseded by the new UI or passing tests.

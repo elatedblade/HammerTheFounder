@@ -64,6 +64,18 @@ export const payments: Resource = {
   fields: [campaign, { name: "amount", label: "Amount", type: "number", required: true, min: 0.01 }, choose("currency", "Currency", ["INR"]), notes],
   actions: [{ label: "Verify receipt", route: "verify/", admin: true, fields: [text("reference", "Verified receipt reference", true), notes], when: (row) => row.status === "PENDING", confirm: "Confirm you independently checked the receipt and amount?" }, { label: "Record failed payment", route: "transition/", admin: true, body: { status: "FAILED" }, fields: [notes], when: (row) => row.status === "PENDING" }, { label: "Record refund", route: "transition/", admin: true, body: { status: "REFUNDED" }, fields: [notes], when: (row) => row.status === "VERIFIED", confirm: "Confirm the refund has already been performed outside HTF? This only records the refund." }],
 };
+export const inquiries: Resource = {
+  title: "Customer inquiries", path: "admin/inquiries/", paginated: true,
+  statusOptions: ["OPEN", "CONTACTED", "CONVERTED", "CLOSED"],
+  columns: ["reference", "customer_name", "customer_email", "plan", "status", "created_at", "campaign_id"],
+  description: "Saved customer plan requests. Opening WhatsApp is a manual handoff; conversion never starts or charges a campaign. After conversion, use the Campaigns tab to review or start it explicitly.",
+  adminEdit: true,
+  editFields: [notes],
+  actions: [
+    { label: "Mark contacted / close", route: "", method: "PATCH", admin: false, fields: [choose("status", "Next status", ["CONTACTED", "CLOSED"]), notes], when: (row) => row.status === "OPEN" || row.status === "CONTACTED", confirm: "Record this inquiry follow-up? This does not send WhatsApp." },
+    { label: "Convert to campaign", route: "convert/", admin: true, when: (row) => row.status !== "CONVERTED" && row.status !== "CLOSED", confirm: "Create the linked campaign? This will not start the campaign or charge the customer." },
+  ],
+};
 export const notifications: Resource = {
   title: "Transactional communications", path: "notifications/", scoped: true, columns: ["channel", "status", "subject", "created_at", "sent_at"],
   description: "Create a notification, then explicitly send transactional email to the campaign customer's saved email or record a WhatsApp message sent manually. Not for cold outreach. Reconcile failed/unknown delivery with the provider before creating another draft.",

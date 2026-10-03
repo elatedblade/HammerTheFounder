@@ -13,3 +13,73 @@ body {
   min-width: 320px;
   background: #09090b;
 }
+
+.ops-workspace { max-width: 1440px; margin: auto; padding: 28px 32px; color: #f4f4f5; font: 14px/1.5 Arial, Helvetica, sans-serif; }
+.workspace-header, .panel-heading, .workspace-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.workspace-header { margin-bottom: 24px; }
+.ops-workspace h1 { font-size: 27px; font-weight: 700; letter-spacing: -.04em; margin: 2px 0 6px; }
+.ops-workspace h2 { font-size: 20px; font-weight: 650; margin: 0 0 5px; }
+.ops-workspace h3 { font-size: 15px; font-weight: 650; margin: 12px 0; }
+.eyebrow { color: #fcd34d; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; margin: 0; }
+.muted, .ops-workspace small { color: #a1a1aa; }
+.ops-workspace p { margin: 4px 0 10px; }
+.workspace-toolbar { padding: 16px; background: #18181b; border: 1px solid #303036; border-radius: 10px; }
+.workspace-toolbar label { min-width: 280px; max-width: 640px; width: 50%; }
+.workspace-toolbar p { max-width: 440px; margin: 0; }
+.workspace-tabs { display: flex; overflow-x: auto; gap: 5px; padding: 16px 0; }
+.ops-workspace button { display: inline-flex; align-items: center; justify-content: center; padding: 8px 13px; background: #fcd34d; color: #18181b; border: 1px solid transparent; border-radius: 6px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.ops-workspace button.secondary, .workspace-tabs button { color: #d4d4d8; background: #202024; border-color: #3f3f46; }
+.workspace-tabs button.active, .subnav button.active { background: #fcd34d; color: #18181b; }
+.ops-workspace button:hover { filter: brightness(1.1); }
+.ops-workspace button:disabled { opacity: .5; cursor: not-allowed; }
+.ops-workspace :focus-visible { outline: 2px solid #fcd34d; outline-offset: 3px; }
+.panel { padding: 22px; border: 1px solid #303036; border-radius: 10px; background: #131316; }
+.panel-heading { margin-bottom: 16px; align-items: flex-start; }
+.button-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.panel-heading .button-row { margin: 0; }
+.subnav { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+.table-scroll { max-width: 100%; overflow: auto; border: 1px solid #303036; border-radius: 7px; }
+.ops-workspace table { border-collapse: collapse; width: 100%; text-align: left; font-size: 13px; }
+.ops-workspace th { color: #a1a1aa; font-weight: 600; white-space: nowrap; background: #1c1c20; }
+.ops-workspace th, .ops-workspace td { padding: 11px 13px; border-bottom: 1px solid #303036; vertical-align: top; }
+.ops-workspace tr:last-child td { border-bottom: 0; }
+.ops-workspace tr.selected { background: #28251b; }
+.cell-content { max-width: 260px; display: block; overflow-wrap: anywhere; white-space: pre-wrap; }
+.badge { display: inline-block; color: #fde68a; background: #342e1e; padding: 3px 7px; border-radius: 4px; font-size: 11px; line-height: 1.4; }
+.empty { padding: 28px 8px; color: #a1a1aa; text-align: center; }
+.error { background: #351c23; border: 1px solid #7f3545; padding: 12px; color: #fecdd3; border-radius: 7px; margin: 12px 0; overflow-wrap: anywhere; }
+.error ul { padding-left: 20px; }
+.success { color: #86efac; padding: 10px 0; }
+.ops-workspace a { color: #fcd34d; text-decoration: underline; }
+.record-detail, .mutation-form { margin-top: 20px; padding-top: 20px; border-top: 1px solid #3f3f46; }
+.details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 14px 0 20px; }
+.details dt { color: #a1a1aa; font-size: 12px; margin-bottom: 4px; }
+.details dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 300px; overflow: auto; }
+.ops-workspace fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.field.wide { grid-column: 1 / -1; }
+.ops-workspace label { display: block; font-size: 12px; color: #d4d4d8; }
+.ops-workspace input, .ops-workspace select, .ops-workspace textarea { display: block; width: 100%; margin-top: 5px; border: 1px solid #52525b; border-radius: 5px; background: #09090b; color: #fafafa; padding: 9px 10px; font: inherit; }
+.ops-workspace textarea { resize: vertical; }
+.field small { display: block; margin: 5px 0; }
+.ops-workspace .field-error { color: #fda4af; }
+.ops-workspace [aria-invalid="true"] { border-color: #fb7185; }
+.search-label { max-width: 460px; margin-bottom: 16px; }
+.record-list { list-style: none; padding: 0; }
+.record-list li { padding: 14px 0; border-bottom: 1px solid #303036; }
+.ops-workspace pre { overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.metric-group { padding: 16px; border: 1px solid #303036; border-radius: 7px; background: #18181b; }
+.metric-group h3 { margin-top: 0; color: #fcd34d; }
+.metric { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; color: #a1a1aa; }
+.metric strong { color: #fafafa; font-size: 17px; }
+.dashboard { display: grid; gap: 18px; }
+.related-tasks, .panel + .dashboard { margin-top: 18px; }
+.timeline { list-style: none; padding: 0; max-height: 650px; overflow: auto; }
+.timeline li { border-left: 2px solid #52525b; padding: 0 0 22px 18px; margin-left: 5px; }
+.timeline p { margin-top: 7px; }
+.workspace-footer { font-size: 12px; color: #71717a; margin-top: 20px; }
+.lookup-errors { padding: 12px; margin: 12px 0; border: 1px solid #7f3545; border-radius: 7px; }
+.lookup-errors summary { cursor: pointer; color: #fecdd3; }
+@media (max-width: 900px) { .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .details { grid-template-columns: repeat(2, minmax(0, 1fr)); } .workspace-toolbar { align-items: flex-start; flex-direction: column; } .workspace-toolbar label { width: 100%; min-width: 0; } }
+@media (max-width: 600px) { .ops-workspace { padding: 20px 12px; } .panel { padding: 15px; } .workspace-header h1 { font-size: 23px; } .panel-heading { flex-direction: column; gap: 10px; } .form-grid, .details, .metrics-grid { grid-template-columns: 1fr; } .workspace-tabs { margin-right: -12px; } }

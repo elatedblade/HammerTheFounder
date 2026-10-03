@@ -1,31 +1,19 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
-
-import { clerkConfigured } from "./lib/auth-config";
 
 const isProtectedRoute = createRouteMatcher(["/workspace(.*)"]);
+const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const authMode = process.env.NEXT_PUBLIC_AUTH_MODE ?? (publishableKey ? "clerk" : "unconfigured");
 
-const clerkProxy = clerkMiddleware(
-  async (auth, request) => {
-    if (isProtectedRoute(request)) {
-      await auth.protect();
-    }
-  },
-  { signInUrl: "/sign-in", signUpUrl: "/sign-up" },
-);
-
-export default function proxy(request: NextRequest, event: NextFetchEvent) {
-  if (!clerkConfigured) {
-    return NextResponse.next();
+export default clerkMiddleware(async (auth, request) => {
+  if (authMode === "clerk" && publishableKey && isProtectedRoute(request)) {
+    await auth.protect();
   }
-
-  return clerkProxy(request, event);
-}
+});
 
 export const config = {
   matcher: [
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     "/(api|trpc)(.*)",
     "/__clerk/:path*",
+    "/((?!_next|.*\\..*).*)",
   ],
 };

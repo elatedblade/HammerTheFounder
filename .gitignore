@@ -27,3 +27,7 @@ npm-debug.log*
 
 # Local Docker data
 .docker-data/
+
+#latest
+.claude/
+.opencode/

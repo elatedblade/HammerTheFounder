@@ -27,6 +27,20 @@ The initial commercial flow is intentionally manual:
 
 ## Detailed implementation plan
 
+### Current build (2026-10-03)
+
+The repository now contains manual application/outreach operations, candidate
+review, campaign assignment/lifecycle, human tasks, events/audit, candidate and
+operator workspaces, manual billing, customer notifications, resume processing,
+and bounded PydanticAI proposals through OmniRoute. External execution remains
+manual. Optional integrations fail closed until configured.
+
+Use [`docs/DELIVERY_STATUS.md`](docs/DELIVERY_STATUS.md) for actual verification
+and remaining limitations, and [`docs/OPERATIONS_RUNBOOK.md`](docs/OPERATIONS_RUNBOOK.md)
+for first-admin setup, production deployment, backups and worker recovery.
+The architecture/roadmap below is the design reference, not a claim that live
+providers, production infrastructure or every future optimization are verified.
+
 See [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) for the build plan, milestones, API/domain boundaries, database design, workflows, security model, testing strategy, and future automation seams.
 
 See [`docs/PROJECT_GUIDE.md`](docs/PROJECT_GUIDE.md) for the current setup instructions, how the candidate and operator workflows work, API usage, environment configuration, testing commands, troubleshooting, and documentation-maintenance rules.

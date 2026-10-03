@@ -6,6 +6,8 @@ from .models import CandidateProfile
 class CandidateProfileSerializer(serializers.ModelSerializer):
     basics_complete = serializers.SerializerMethodField(read_only=True)
     profile_version = serializers.IntegerField(min_value=0, required=True)
+    expected_ctc_min = serializers.DecimalField(max_digits=14, decimal_places=2, required=False, allow_null=True, min_value=0, coerce_to_string=False)
+    expected_ctc_max = serializers.DecimalField(max_digits=14, decimal_places=2, required=False, allow_null=True, min_value=0, coerce_to_string=False)
 
     class Meta:
         model = CandidateProfile
@@ -18,6 +20,9 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
             "target_roles",
             "preferred_locations",
             "remote_preference",
+            "target_industries", "expected_ctc_min", "expected_ctc_max",
+            "work_authorization", "sponsorship_requirement", "notice_period",
+            "preferences_json", "review_status",
             "profile_version",
             "created_at",
             "updated_at",
@@ -28,6 +33,7 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "basics_complete",
+            "review_status",
         )
 
     def to_internal_value(self, data):
@@ -54,6 +60,14 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"profile_version": "This field is required."}
             )
+        low = attrs.get("expected_ctc_min", getattr(self.instance, "expected_ctc_min", None))
+        high = attrs.get("expected_ctc_max", getattr(self.instance, "expected_ctc_max", None))
+        if (low is not None and low < 0) or (high is not None and high < 0):
+            raise serializers.ValidationError({"expected_ctc_min": "Compensation must not be negative."})
+        if low is not None and high is not None and low > high:
+            raise serializers.ValidationError({"expected_ctc_max": "Maximum must be at least the minimum."})
+        if "preferences_json" in attrs and not isinstance(attrs["preferences_json"], dict):
+            raise serializers.ValidationError({"preferences_json": "Expected an object."})
         return attrs
 
     def validate_full_name(self, value):
@@ -93,6 +107,9 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
         return self._validate_string_list(value)
 
     def validate_preferred_locations(self, value):
+        return self._validate_string_list(value)
+
+    def validate_target_industries(self, value):
         return self._validate_string_list(value)
 
     def get_basics_complete(self, obj):

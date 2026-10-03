@@ -18,7 +18,7 @@ class CandidateProfileView(APIView):
         return Response(CandidateProfileSerializer(profile).data)
 
     def patch(self, request):
-        serializer = CandidateProfileSerializer(data=request.data, partial=True)
+        serializer = CandidateProfileSerializer(instance=get_own_profile(request.user), data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         profile = upsert_own_profile(
             user=request.user,

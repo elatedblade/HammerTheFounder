@@ -57,6 +57,7 @@ jobs:
           PY
       - run: python -m pytest -q
       - run: python manage.py check
+      - run: python manage.py makemigrations --check --dry-run
 
   frontend:
     runs-on: ubuntu-latest
@@ -77,3 +78,12 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run build
+
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4

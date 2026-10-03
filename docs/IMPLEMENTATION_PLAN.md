@@ -1,5 +1,11 @@
 # HTF Implementation Plan v1
 
+> Implementation update (2026-10-03): core manual-first domain APIs and both
+> workspaces are now implemented, including billing, communications, task/event
+> workflows and bounded AI proposals. See `DELIVERY_STATUS.md` for verified checks
+> and remaining launch requirements. This document remains the design/acceptance
+> reference; a described future capability is not automatically a completed feature.
+
 ## 1. Objective
 
 Build a production-capable MVP for Hammer The Founder (HTF) that lets HTF operate managed job-search campaigns for clients.

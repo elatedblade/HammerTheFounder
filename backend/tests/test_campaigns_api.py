@@ -33,6 +33,7 @@ def make_profile(user, *, ready=False):
             location="London",
             experience_summary="Builds reliable systems.",
             target_roles=["Staff Engineer"],
+            review_status="APPROVED",
         )
     return CandidateProfile.objects.create(**values)
 
@@ -106,13 +107,16 @@ def test_operator_creates_campaign_and_can_start_ready_campaign():
     assert created.json()["status"] == Campaign.Status.READY
     assert created.json()["trial_end_date"] == "2026-10-16"
     campaign_id = created.json()["id"]
+    admin = make_user("admin", role=User.Role.ADMIN)
+    assigned = client_for(admin).patch(reverse("campaigns:detail", args=[campaign_id]), {"assigned_to": operator.pk}, format="json")
+    assert assigned.status_code == 200
 
     started = client.post(reverse("campaigns:start", args=[campaign_id]))
 
     assert started.status_code == 200
     assert started.json()["status"] == Campaign.Status.ACTIVE
     assert started.json()["start_date"] == date.today().isoformat()
-    assert started.json()["version"] == 2
+    assert started.json()["version"] == 3
 
 
 def test_start_marks_incomplete_campaign_onboarding_and_returns_conflict():
@@ -134,12 +138,13 @@ def test_start_marks_incomplete_campaign_onboarding_and_returns_conflict():
 
 def test_pause_and_resume_are_explicit_state_transitions():
     candidate = make_user("candidate")
+    operator = make_user("operator", role=User.Role.OPERATOR)
     campaign = Campaign.objects.create(
         candidate=make_profile(candidate),
         plan=Campaign.Plan.NORMAL_APPLY,
         status=Campaign.Status.ACTIVE,
+        assigned_to=operator,
     )
-    operator = make_user("operator", role=User.Role.OPERATOR)
     client = client_for(operator)
 
     paused = client.post(reverse("campaigns:pause", args=[campaign.id]))
@@ -177,3 +182,22 @@ def test_campaign_creation_rejects_invalid_plan(bad_plan):
 
     assert response.status_code == 400
     assert "plan" in response.json()["details"]
+
+
+def test_assignment_migrates_outstanding_task_claims_with_audit():
+    from apps.tasks.models import HumanTask
+    from apps.events.models import Event
+    owner = make_user("owner")
+    first = make_user("first-operator", role=User.Role.OPERATOR)
+    second = make_user("second-operator", role=User.Role.OPERATOR)
+    admin = make_user("admin", role=User.Role.ADMIN)
+    campaign = Campaign.objects.create(candidate=make_profile(owner), plan=Campaign.Plan.NORMAL_APPLY, assigned_to=first, status=Campaign.Status.ACTIVE)
+    task = HumanTask.objects.create(campaign=campaign, task_type="QA", assigned_to=first, status="CLAIMED")
+    response = client_for(admin).patch(reverse("campaigns:detail", args=[campaign.pk]), {"assigned_to": second.pk}, format="json")
+    assert response.status_code == 200
+    task.refresh_from_db()
+    assert task.assigned_to == second and task.status == "OPEN"
+    audit = Event.objects.get(event_type="task.reassigned")
+    assert audit.actor == admin
+    assert audit.payload["before"]["assigned_to_id"] == str(first.pk)
+    assert audit.payload["after"]["assigned_to_id"] == str(second.pk)

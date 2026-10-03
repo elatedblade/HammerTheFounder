@@ -16,6 +16,11 @@ class Resume(models.Model):
 
     class ParseStatus(models.TextChoices):
         NOT_STARTED = "NOT_STARTED", "Not started"
+        QUEUED = "QUEUED", "Queued"
+        PROCESSING = "PROCESSING", "Processing"
+        PARSED = "PARSED", "Parsed"
+        FAILED = "FAILED", "Failed"
+        UNSUPPORTED = "UNSUPPORTED", "Unsupported"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     candidate = models.ForeignKey(
@@ -37,6 +42,11 @@ class Resume(models.Model):
         choices=ParseStatus.choices,
         default=ParseStatus.NOT_STARTED,
     )
+    extracted_text = models.TextField(blank=True)
+    parse_error_code = models.CharField(max_length=80, blank=True)
+    parse_started_at = models.DateTimeField(null=True)
+    parsed_at = models.DateTimeField(null=True)
+    parse_attempts = models.PositiveSmallIntegerField(default=0)
     version = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -33,6 +33,10 @@ class ResumeStorage(Protocol):
         self, *, key: str, content_type: str, file_size: int
     ) -> None: ...
 
+    def authorize_download(self, *, key: str, expires_in: int = 300) -> str: ...
+
+    def read_document(self, *, key: str, max_bytes: int) -> bytes: ...
+
 
 class S3ResumeStorage:
     def __init__(self, *, region, bucket, access_key_id, secret_access_key):
@@ -47,7 +51,7 @@ class S3ResumeStorage:
             region_name=region,
             aws_access_key_id=access_key_id,
             aws_secret_access_key=secret_access_key,
-            config=Config(signature_version="s3v4"),
+            config=Config(signature_version="s3v4", connect_timeout=5, read_timeout=15, retries={"max_attempts": 2, "mode": "standard"}),
         )
 
     def authorize_upload(
@@ -75,6 +79,30 @@ class S3ResumeStorage:
         return UploadAuthorization(
             url=url, headers={"Content-Type": content_type}, expires_in=expires_in
         )
+
+    def authorize_download(self, *, key: str, expires_in: int = 300):
+        from botocore.exceptions import BotoCoreError, ClientError
+        try:
+            return self.client.generate_presigned_url("get_object", Params={"Bucket": self.bucket, "Key": key, "ResponseContentDisposition": "attachment"}, ExpiresIn=expires_in, HttpMethod="GET")
+        except (BotoCoreError, ClientError) as exc:
+            raise StorageUnavailable() from exc
+
+    def read_document(self, *, key: str, max_bytes: int):
+        from botocore.exceptions import BotoCoreError, ClientError
+        try:
+            response = self.client.get_object(Bucket=self.bucket, Key=key)
+            stream = response["Body"]
+            try:
+                if response.get("ContentLength", 0) > max_bytes:
+                    raise StorageObjectMismatch()
+                content = stream.read(max_bytes + 1)
+                if len(content) > max_bytes:
+                    raise StorageObjectMismatch()
+                return content
+            finally:
+                stream.close()
+        except (BotoCoreError, ClientError) as exc:
+            raise StorageUnavailable() from exc
 
     def verify_upload(self, *, key: str, content_type: str, file_size: int) -> None:
         """Verify the private object uploaded by the browser matches its intent."""

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 
 import {
   ApiRequestError,
+  downloadResume,
   completeCandidateResumeUpload,
   getCandidateResumes,
   requestCandidateResumeUpload,
@@ -58,10 +59,32 @@ export default function ResumeSection({ getToken }: { getToken: () => Promise<st
   const [fileError, setFileError] = useState<string | null>(null);
   const [uploadState, setUploadState] = useState<UploadState>("idle");
   const [message, setMessage] = useState("");
+  const [downloadBusy, setDownloadBusy] = useState<string | number | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [downloadLink, setDownloadLink] = useState<{id: string|number; url: string; expires_in: number}|null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listController = useRef<AbortController | null>(null);
   const uploadController = useRef<AbortController | null>(null);
   const busy = ["authorizing", "uploading", "refreshing"].includes(uploadState);
+
+  useEffect(() => {
+    if (!downloadLink) return;
+    const timer = window.setTimeout(() => setDownloadLink(null), Math.max(0, downloadLink.expires_in * 1000));
+    return () => window.clearTimeout(timer);
+  }, [downloadLink]);
+  const prepareDownload = async (id: string | number) => {
+    setDownloadBusy(id);
+    setDownloadError(null);
+    setDownloadLink(null);
+    try {
+      const result = await downloadResume(getToken, id);
+      const url = new URL(result.url);
+      if (!["http:", "https:"].includes(url.protocol) || !Number.isFinite(result.expires_in) || result.expires_in <= 0) throw new Error("The download authorization is invalid. Contact HTF.");
+      setDownloadLink({id, url: url.href, expires_in: result.expires_in});
+    } catch (error) {
+      setDownloadError(error instanceof Error ? error.message : "We could not authorize your download.");
+    } finally { setDownloadBusy(null); }
+  };
 
   const refreshResumes = useCallback(async (): Promise<boolean> => {
     listController.current?.abort();
@@ -185,7 +208,7 @@ export default function ResumeSection({ getToken }: { getToken: () => Promise<st
   };
 
   return (
-    <section className="panel resume-panel" aria-labelledby="resume-heading">
+    <section id="documents" className="panel resume-panel" aria-labelledby="resume-heading">
       <div className="panel-heading">
         <div><span className="eyebrow">Your documents</span><h2 id="resume-heading">Resume</h2></div>
         <span className="resume-format-note">PDF, DOC or DOCX · up to 10 MB</span>
@@ -236,6 +259,7 @@ export default function ResumeSection({ getToken }: { getToken: () => Promise<st
         </div>
         {loading ? <p className="muted" role="status">Loading your resumes…</p> : null}
         {listError ? <p className="field-error" role="alert">{listError} Use Refresh list to try again.</p> : null}
+        {downloadError ? <p className="field-error" role="alert">{downloadError} Choose Prepare download to try again.</p> : null}
         {!loading && !listError && !setupRequired && resumes.length === 0 ? <p className="resume-empty">No resume records yet. Choose a file above to get started.</p> : null}
         {resumes.length > 0 ? (
           <>
@@ -247,6 +271,9 @@ export default function ResumeSection({ getToken }: { getToken: () => Promise<st
                   <li key={resume.id}>
                     <strong>{resume.original_filename}</strong>
                     <span>{formatSize(resume.file_size)} · {resume.content_type}{resume.upload_status ? ` · ${resume.upload_status}` : null}{date ? <> · Added <time dateTime={dateValue}>{date}</time></> : null}</span>
+                    <div className="resume-download-actions"><button className="button button-secondary button-small" type="button" disabled={downloadBusy !== null || resume.upload_status === "PENDING_UPLOAD" || resume.upload_status === "FAILED"} onClick={() => void prepareDownload(resume.id)}>{downloadBusy === resume.id ? "Authorizing…" : "Prepare download"}</button>
+                      {downloadLink?.id === resume.id ? <><a className="button button-primary button-small" href={downloadLink.url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">Download resume (new tab)</a><span className="field-hint" role="status">Secure link expires in {downloadLink.expires_in} seconds.</span></> : null}
+                    </div>
                   </li>
                 );
               })}

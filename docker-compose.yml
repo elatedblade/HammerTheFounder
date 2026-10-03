@@ -28,6 +28,7 @@ services:
       retries: 10
 
   backend:
+    init: true
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -49,6 +50,16 @@ services:
       CLERK_JWT_AUDIENCE: ${CLERK_JWT_AUDIENCE:-}
       CLERK_JWT_PUBLIC_KEY: ${CLERK_JWT_PUBLIC_KEY:-}
       CLERK_JWKS_URL: ${CLERK_JWKS_URL:-}
+      HTF_TIME_ZONE: ${HTF_TIME_ZONE:-Asia/Kolkata}
+      UPI_ID: ${UPI_ID:-}
+      UPI_PAYEE_NAME: ${UPI_PAYEE_NAME:-}
+      UPI_INSTRUCTIONS: ${UPI_INSTRUCTIONS:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
+      OMNIROUTE_BASE_URL: ${OMNIROUTE_BASE_URL:-}
+      OMNIROUTE_API_KEY: ${OMNIROUTE_API_KEY:-}
+      OMNIROUTE_MODEL: ${OMNIROUTE_MODEL:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
     ports:
       - "8000:8000"
     depends_on:
@@ -59,6 +70,7 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
 
   worker:
+    init: true
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -80,6 +92,13 @@ services:
       CLERK_JWT_AUDIENCE: ${CLERK_JWT_AUDIENCE:-}
       CLERK_JWT_PUBLIC_KEY: ${CLERK_JWT_PUBLIC_KEY:-}
       CLERK_JWKS_URL: ${CLERK_JWKS_URL:-}
+      HTF_TIME_ZONE: ${HTF_TIME_ZONE:-Asia/Kolkata}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
+      OMNIROUTE_BASE_URL: ${OMNIROUTE_BASE_URL:-}
+      OMNIROUTE_API_KEY: ${OMNIROUTE_API_KEY:-}
+      OMNIROUTE_MODEL: ${OMNIROUTE_MODEL:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,11 +110,13 @@ services:
     build:
       context: ./client-web
       dockerfile: Dockerfile
+      target: development
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
       NEXT_PUBLIC_AUTH_MODE: ${NEXT_PUBLIC_AUTH_MODE:-unconfigured}
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-${CLERK_PUBLISHABLE_KEY:-}}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:-}
+      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
     ports:
       - "3000:3000"
     depends_on:
@@ -106,11 +127,13 @@ services:
     build:
       context: ./admin-web
       dockerfile: Dockerfile
+      target: development
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
       NEXT_PUBLIC_AUTH_MODE: ${NEXT_PUBLIC_AUTH_MODE:-unconfigured}
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-${CLERK_PUBLISHABLE_KEY:-}}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:-}
+      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
     ports:
       - "3001:3000"
     depends_on:

@@ -1,6 +1,6 @@
 import { SignIn } from "@clerk/nextjs";
 
-import { clerkConfigured } from "../../../lib/auth-config";
+import { clerkConfigured } from "../../auth-provider";
 import { SetupState } from "../../authenticated-home";
 
 export default function SignInPage() {

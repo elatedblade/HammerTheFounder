@@ -5,6 +5,9 @@ This is the working guide for developing, running, and using Hammer The Founder
 plan. Update this file when a user-visible workflow, API contract, environment
 variable, data model, or operational command changes.
 
+Current delivery evidence is in `DELIVERY_STATUS.md`. Production setup, role
+bootstrap, S3 CORS and worker recovery are in `OPERATIONS_RUNBOOK.md`.
+
 ## 1. What HTF does
 
 HTF is a managed job-search operations platform. A candidate supplies profile
@@ -41,6 +44,11 @@ The client web app currently supports:
    verification.
 7. A read-only campaign workspace showing campaign status, plan, billing state,
    trial end date, and start date.
+8. Complete structured intake: industries, compensation bounds, work authorization,
+   sponsorship, notice period and additional preferences; read-only review state.
+9. Server-derived overview, applications/outreach, interviews and scheduling dates,
+   campaign activity, sent customer notifications, payment states and configured UPI instructions.
+10. Authorized short-lived resume download links.
 
 ### Operations experience
 
@@ -48,13 +56,21 @@ The admin web app currently provides:
 
 - Clerk sign-in.
 - A role gate for `OPERATOR`, `ADMIN`, and `SUPERADMIN` accounts.
-- A protected operations-workspace shell.
+- Candidate review, resume download/parsing and parsed-text viewing.
+- Campaign creation, assignment, settings and explicit lifecycle actions.
+- Companies, jobs and applications, including interview scheduling and failure handling.
+- Contacts, suppression, templates and manually recorded outreach/replies.
+- Prioritized human review tasks with claiming and completion.
+- Manual payment records and admin-only verification/refunds.
+- Customer communication drafts, templates and explicit send/mark-sent actions.
+- AI proposal requests grounded in saved candidate/job/contact/resume records.
+- Server-derived metrics and campaign activity.
 
-The backend currently provides campaign lifecycle APIs for operators and
-administrators, plus operator-only company, job, and application APIs. The
-admin UI still needs the full task queue, applications workspace, outreach,
-and billing screens; these backend capabilities are not yet represented as
-complete end-to-end product workflows.
+These workflows now have corresponding backend routes, migrations and UI.
+Real Clerk/S3/Resend/OmniRoute verification still requires deployment-specific
+configuration. See `DELIVERY_STATUS.md` for exact checks and remaining limits.
+Operators can access assigned campaigns and unassigned intake campaigns;
+only administrators change assignment and verify/refund payments.
 
 ## 3. Repository map
 
@@ -71,7 +87,7 @@ complete end-to-end product workflows.
 │   ├── apps/applications/   application creation and status transitions
 │   └── apps/integrations/   storage and authentication adapters
 ├── client-web/              candidate Next.js application
-├── admin-web/               operator/admin Next.js application shell
+├── admin-web/               operator/admin Next.js operations workspace
 ├── docs/                    implementation plan, ADRs, and this guide
 ├── docker-compose.yml       PostgreSQL, Redis, backend, worker, and web apps
 ├── .env.example             redacted local configuration template
@@ -139,7 +155,7 @@ The services are exposed at:
 | Service | URL | Purpose |
 |---|---|---|
 | Candidate web | http://localhost:3000 | Candidate profile, resume, campaign view |
-| Admin web | http://localhost:3001 | Operator/admin workspace shell |
+| Admin web | http://localhost:3001 | Operator/admin operations workspace |
 | Django API | http://localhost:8000 | REST API |
 | API health | http://localhost:8000/health/ | Dependency-light liveness check |
 | PostgreSQL | localhost:5432 | Local relational database |
@@ -276,6 +292,9 @@ The profile contains:
 - Target roles.
 - Preferred locations.
 - Remote preference.
+- Target industries and expected compensation minimum/maximum (INR annual CTC).
+- Work authorization, sponsorship requirement and notice period.
+- Structured additional preferences and read-only operator review status.
 
 Target roles and preferred locations are arrays in the API. In the UI, type
 normally, choose a suggestion, press `Enter`, or type a comma to commit a tag.
@@ -295,7 +314,7 @@ PATCH /api/v1/candidate/profile/
 ```
 
 The server increments `profile_version` on a successful save. A stale version
-returns `409 PROFILE_VERSION_CONFLICT`; the UI offers a reload of the saved
+    returns `409 STALE_PROFILE_VERSION`; the UI offers a reload of the saved
 server version instead of silently overwriting another edit.
 
 ### Upload a resume
@@ -380,11 +399,17 @@ Campaign creation example:
 ```
 
 Campaign creation is allowed only for active client profiles. A campaign is
-created as `READY` when the candidate profile is complete and at least one
-resume is verified as uploaded; otherwise it starts as `DRAFT`. Starting an
+created as `READY` when the candidate profile is complete, operator-approved and
+at least one resume is verified as uploaded; otherwise it starts as `DRAFT`. Starting an
 incomplete campaign moves it to `ONBOARDING` and returns
 `409 CAMPAIGN_NOT_READY`. Starting a ready campaign moves it to `ACTIVE` and
 sets `start_date` if it is not already set.
+
+An administrator must assign an unassigned campaign before an operator can
+start it. Administrators can start any visible ready campaign. Profile fact
+edits reset review to `PENDING`; explicit review is required before starting.
+PATCH `/campaigns/{id}/` updates plan/settings/trial and admin-only assignment.
+POST `complete/` or `cancel/` closes a campaign and cancels outstanding tasks.
 
 Lifecycle transitions are explicit rather than an unrestricted status PATCH:
 
@@ -395,11 +420,12 @@ READY ────────┘
 ```
 
 Invalid transitions return `409 INVALID_CAMPAIGN_TRANSITION`. Each successful
-transition increments the campaign `version` for an auditable state change.
+transition increments the campaign `version` and appends an actor-attributed
+event and audit entry. Version numbers alone are not treated as audit history.
 
 ### Companies, jobs, and applications
 
-These operational APIs are currently backend-first and restricted to
+These operational APIs are used by the admin workspace and restricted to
 operators/admins unless noted otherwise:
 
 | Method | Endpoint | Result |
@@ -448,7 +474,7 @@ messages. Common codes include:
 | `FORBIDDEN` | Authenticated user lacks the required role |
 | `NOT_FOUND` | Resource is absent or outside the caller's visibility scope |
 | `VALIDATION_ERROR` | Request fields are invalid |
-| `PROFILE_VERSION_CONFLICT` | Profile was saved from a stale version |
+| `STALE_PROFILE_VERSION` | Profile was saved from a stale version |
 | `STORAGE_NOT_CONFIGURED` | Private S3 settings are incomplete |
 | `CAMPAIGN_NOT_READY` | Candidate prerequisites are incomplete |
 | `INVALID_CAMPAIGN_TRANSITION` | Requested lifecycle action is not allowed |

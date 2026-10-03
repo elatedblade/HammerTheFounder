@@ -35,13 +35,23 @@ INSTALLED_APPS = [
     "apps.candidates.apps.CandidatesConfig",
     "apps.resumes.apps.ResumesConfig",
     "apps.campaigns.apps.CampaignsConfig",
-    "apps.companies.apps.CompaniesConfig",
-    "apps.jobs.apps.JobsConfig",
-    "apps.applications.apps.ApplicationsConfig",
+    "apps.companies",
+    "apps.jobs",
+    "apps.applications",
+    "apps.contacts",
+    "apps.outreach",
+    "apps.tasks",
+    "apps.events",
+    "apps.audit",
+    "apps.dashboard",
+    "apps.billing",
+    "apps.notifications",
+    "apps.ai",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "config.middleware.PrivateAPIResponseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -115,6 +125,24 @@ CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 300
 CELERY_TASK_SOFT_TIME_LIMIT = 240
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_CONNECTION_TIMEOUT = 3
+CELERY_TASK_PUBLISH_RETRY = False
+CELERY_RESULT_EXPIRES = 3600
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
+# Optional supporting services. Empty configuration fails closed at adapter boundaries.
+UPI_ID = os.getenv("UPI_ID", "")
+UPI_PAYEE_NAME = os.getenv("UPI_PAYEE_NAME", "")
+UPI_INSTRUCTIONS = os.getenv("UPI_INSTRUCTIONS", "")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "")
+OMNIROUTE_BASE_URL = os.getenv("OMNIROUTE_BASE_URL", "")
+OMNIROUTE_API_KEY = os.getenv("OMNIROUTE_API_KEY", "")
+OMNIROUTE_MODEL = os.getenv("OMNIROUTE_MODEL", "")
 
 # Resume objects are private; authorization URLs are generated on demand only.
 AWS_REGION = os.getenv("AWS_REGION", "")
@@ -132,7 +160,7 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTH_USER_MODEL = "users.User"
 
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
+TIME_ZONE = os.getenv("HTF_TIME_ZONE", "Asia/Kolkata")
 USE_I18N = True
 USE_TZ = True
 
@@ -140,6 +168,7 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
@@ -153,3 +182,7 @@ REST_FRAMEWORK = {
     ],
     "EXCEPTION_HANDLER": "config.api_errors.api_exception_handler",
 }
+
+from config.observability import configure_observability
+
+configure_observability()

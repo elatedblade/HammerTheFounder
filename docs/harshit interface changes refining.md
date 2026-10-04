@@ -50,6 +50,16 @@ from scripts; no fresh provider installs or business data mutations were require
 Remaining scope: full live authenticated browser walkthrough and security-advisory
 triage remain open; passing isolation tests is not a guarantee of zero vulnerabilities.
 
+## Outreach and refresh follow-up
+
+Outreach is again a primary admin tab and uses existing manual resources. It is
+connected to the customer dashboard's Outreach view with paged records, safe
+customer serialization and the same campaign visibility boundary as applications.
+The dashboard refresh button now starts a new reload generation for all customer
+progress resources and cancels stale requests, so admin status updates can be read
+without a full browser reload. Sync tests cover application and outreach status
+changes, customer visibility and outsider denial.
+
 - Dashboard now derives its next action from campaign lifecycle. ACTIVE wins over
   missing inquiries and profile prompts; READY/onboarding/draft/paused states do
   not show acquisition CTAs. Loading and failed campaign reads are not empty states.

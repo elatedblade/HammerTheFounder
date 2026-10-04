@@ -112,3 +112,29 @@ def test_notifications_beyond_200_are_reachable_and_drafts_remain_private(world)
     assert all(row["status"] == "SENT" for row in first.json() + second.json())
     assert "no-store" in first["Cache-Control"]
     assert api(outsider).get(BASE + "notifications/").json() == []
+
+
+def test_admin_outreach_updates_are_visible_to_customer_without_internal_content(world):
+    from apps.contacts.models import Contact
+    from apps.outreach.models import Outreach
+    owner, outsider, admin, operator, candidate, campaign = world
+    company = api(admin).post(BASE + "companies/", {"name": "Outreach sync company"}, format="json")
+    assert company.status_code == 201
+    contact = api(admin).post(BASE + "contacts/", {"company": company.data["id"], "name": "Synthetic founder", "email": "founder@sync.example"}, format="json")
+    assert contact.status_code == 201
+    # NORMAL_APPLY cannot be sent externally, so the test verifies the safe recorded pipeline.
+    created = api(admin).post(BASE + "outreach/", {"campaign": str(campaign.pk), "contact": contact.data["id"], "channel": "EMAIL", "subject": "Private draft subject", "body": "Private draft body"}, format="json")
+    assert created.status_code == 201
+    outreach_url = BASE + f"outreach/{created.data['id']}/transition/"
+    for status in ("TARGET_IDENTIFIED", "CONTACT_VERIFIED", "DRAFTED", "REVIEW_REQUIRED"):
+        response = api(admin).post(outreach_url, {"status": status}, format="json")
+        assert response.status_code == 200, response.data
+    customer_rows = api(owner).get(BASE + "outreach/", {"campaign": campaign.pk}).json()
+    assert len(customer_rows) == 1
+    row = customer_rows[0]
+    assert row["status"] == "REVIEW_REQUIRED"
+    assert row["company_name"] == "Outreach sync company"
+    assert row["contact_name"] == "Synthetic founder"
+    assert not {"body", "subject", "notes", "contact", "thread_reference"}.intersection(row)
+    assert api(outsider).get(BASE + "outreach/", {"campaign": campaign.pk}).status_code == 404
+    assert api(owner).post(outreach_url, {"status": "CLOSED"}, format="json").status_code == 403

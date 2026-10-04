@@ -148,6 +148,26 @@ customer read parity tests for application metrics/history, payments, inquiries,
 notifications and access boundaries using isolated DRF test authentication.
 Live Clerk authenticated browser acceptance remains separate and outstanding.
 
+### Outreach and dashboard refresh follow-up
+
+Outreach is restored as a primary admin tab with its existing manual resources:
+outreach records, contacts, suppression and templates. It remains manual-only;
+the UI does not send messages. Customer Dashboard → Outreach now reads the same
+server records as Applications with paged loading, safe customer fields only,
+empty/error/retry states and campaign choices limited to the customer's own
+campaigns.
+
+The dashboard refresh action now increments a reload generation for all progress
+resources, including Applications, Outreach, Notifications and Payments, while
+each request cancels stale work. A new DRF sync test verifies admin status changes
+through the application and outreach pipelines are visible to the customer and
+not to an outsider; private body/notes/contact/thread fields remain filtered.
+
+Final follow-up checks: **187 backend tests passed**, Django check and migration
+drift passed; client **13 helper tests**, typecheck/lint and browser **3/3 tests**
+passed. Admin previously passed **8 tests**, typecheck/lint/build after Outreach
+restoration. The live authenticated Clerk walkthrough is still not claimed.
+
 Final verification: **182 backend tests passed**, Django checks and migration-drift
 checks passed. Both frontend builds/lint/typechecks passed; customer helper tests
 8 passed, admin checks 3 passed, anonymous browser tests 3 passed after dev-server

@@ -1,4 +1,7 @@
 import type { Campaign, CandidateProfile, Inquiry } from "../../lib/api";
+// Explicit extension also supports the Node strip-types regression tests.
+// @ts-expect-error TypeScript's bundler configuration disallows TS import extensions.
+import { SERVICE_PLANS } from "../../lib/marketing.ts";
 
 export type LifecyclePresentation = {
   kind: "loading" | "error" | "none" | "active" | "ready" | "onboarding" | "draft" | "paused" | "historical";
@@ -24,7 +27,7 @@ export function getLifecyclePresentation(input: Input): LifecyclePresentation {
   if (!input.campaigns) return { kind: "loading", headline: "Loading campaign status", detail: "Waiting for verified campaign records.", showChoosePlan: false, showPlansLink: false, showProfileAction: false };
   const campaigns = input.campaigns ?? [];
   const active = campaigns.find((campaign) => campaign.status === "ACTIVE");
-  if (active) return { kind: "active", headline: `${active.plan.replaceAll("_", " ")} · Active`, detail: "Status: active. Progress and submitted records are shown below; choosing a plan cannot change this campaign.", showChoosePlan: false, showPlansLink: true, showProfileAction: false };
+  if (active) return { kind: "active", headline: `${SERVICE_PLANS.find((plan) => plan.id === active.plan)?.name ?? active.plan.replaceAll("_", " ")} · Active`, detail: "Status: active. Progress and submitted records are shown below; choosing a plan cannot change this campaign.", showChoosePlan: false, showPlansLink: true, showProfileAction: false };
   const current = ["READY", "ONBOARDING", "DRAFT", "PAUSED"].map((status) => campaigns.find((campaign) => campaign.status === status)).find(Boolean);
   if (current?.status === "READY") return { kind: "ready", headline: "Your campaign is ready to start", detail: "HTF has the campaign ready. Start remains an explicit team action after readiness checks.", showChoosePlan: false, showPlansLink: true, showProfileAction: false };
   if (current?.status === "ONBOARDING") return { kind: "onboarding", headline: "Your campaign is being set up", detail: "The HTF team is completing onboarding before work begins.", showChoosePlan: false, showPlansLink: true, showProfileAction: false };

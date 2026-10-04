@@ -10,3 +10,10 @@ export function jobPayload(values: { company: string; title: string; location: s
   if (!values.company || !values.title.trim()) throw new Error("Choose a company and enter a job title.");
   return { ...values, title: values.title.trim(), status: "OPEN" };
 }
+
+export function oneStepApplicationPayload(values: { campaign: string; notes: string; source_reference: string }, job: string | null, draft: { company_name: string; title: string; location: string; canonical_url: string }) {
+  if (!values.campaign) throw new Error("Choose an authorized campaign first.");
+  if (job) return { ...values, job };
+  if (!draft.company_name.trim() || !draft.title.trim()) throw new Error("Enter a company name and job title.");
+  return { ...values, new_job: { ...draft, company_name: draft.company_name.trim(), title: draft.title.trim() } };
+}

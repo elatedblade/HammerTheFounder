@@ -38,6 +38,7 @@ export default function OperationsWorkspace({ user, api }: { user: CurrentUser; 
     if (tab === "Campaigns") paths.candidates = "admin/candidates/";
     if (tab === "Applications") paths.companies = "companies/";
     if (tab === "Applications") paths.jobs = "jobs/";
+    if (tab === "Outreach") { paths.companies = "companies/"; paths.contacts = "contacts/"; }
     if (isAdmin(user) && tab === "Campaigns") paths.operators = "admin/operators/";
     Promise.all(Object.entries(paths).map(async ([key, path]) => {
       try {

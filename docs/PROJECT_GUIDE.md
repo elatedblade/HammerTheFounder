@@ -8,6 +8,27 @@ variable, data model, or operational command changes.
 Current delivery evidence is in `DELIVERY_STATUS.md`. Production setup, role
 bootstrap, S3 CORS and worker recovery are in `OPERATIONS_RUNBOOK.md`.
 
+Latest branch verification and merge blockers are recorded in
+[`RESTORE_BRANCH_VERIFICATION.md`](RESTORE_BRANCH_VERIFICATION.md). The branch
+`feature/restore-inquiries-frontend` passes fresh-database tests but has not been
+merged into main: the old database upgrade and combined-source checks fail.
+Use http://localhost:13000 (candidate) and http://localhost:13001 (admin) for
+the isolated, empty-database test environment; see that report for run/stop commands.
+
+### Latest customer pages and inquiries
+
+The public `/` route describes services without collecting a candidate profile.
+`/plans` handles plan choice/inquiries and Help; `/profile` handles profile and
+resume edits; `/dashboard` shows actual campaign lifecycle and activity. Signed-out
+visitors go through Clerk sign-in before protected pages. The legacy `/workspace`
+route redirects into the customer dashboard. Choosing a plan records an inquiry;
+it does not activate a campaign or grant operational privileges.
+
+Admin Inquiries and Notifications are primary tabs again, alongside Outreach and
+the core operational tabs. Overview scope controls do not globally filter unrelated
+workspace tabs. The browser suite covers public navigation/mobile behavior; real
+authenticated customer/operator acceptance remains separate.
+
 ## 1. What HTF does
 
 HTF is a managed job-search operations platform. A candidate supplies profile

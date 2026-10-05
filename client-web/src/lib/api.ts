@@ -74,15 +74,19 @@ export type ResumeUploadRequest = {
   file_size: number;
 };
 
-export type Dashboard = { applications: Record<string, number>; outreach: Record<string, number>; campaigns: Record<string, number>; tasks: { open: number } };
+export type Dashboard = { applications: Record<string, number | Record<string, number>> & { stage_counts: Record<string, number> }; outreach: Record<string, number | Record<string, number>> & { stage_counts?: Record<string, number> }; campaigns: Record<string, number>; tasks: { open: number } };
 export const APPLICATION_STATUSES = ["SAVED", "READY", "DISCOVERED", "SHORTLISTED", "QUEUED", "IN_PROGRESS", "APPLICATION_FAILED", "SUBMITTED", "IN_REVIEW", "RECRUITER_CONTACTED", "INTERVIEW", "INTERVIEW_SCHEDULED", "OFFER", "REJECTED", "WITHDRAWN"] as const;
 export const OUTREACH_STATUSES = ["DRAFT", "READY", "TARGET_IDENTIFIED", "CONTACT_VERIFIED", "DRAFTED", "REVIEW_REQUIRED", "SENT", "DELIVERED", "REPLIED", "POSITIVE_REPLY", "NEGATIVE_REPLY", "BOUNCED", "CLOSED", "SUPPRESSED"] as const;
-export type Application = { id: string|number; campaign: string; job: string; company_name: string; job_title: string; status: string; submitted_at: string|null; interview_scheduled_at: string|null; created_at: string; updated_at: string };
+export type Application = { id: string|number; campaign: string; job: string; company_name: string; job_title: string; status: string; stage: import("../app/application-stages").ApplicationStage | null; submitted_at: string|null; interview_scheduled_at: string|null; created_at: string; updated_at: string };
 export type Outreach = { id: string|number; campaign: string; company_name: string; contact_name: string; channel: string; status: string; sent_at: string|null; delivered_at: string|null; bounced_at: string|null; reply_at: string|null; follow_up_due_at: string|null; };
 export type CampaignEvent = { id: string|number; event_type: string; summary: string; created_at: string; campaign: string|null };
 export type Notification = { id: string|number; campaign: string|null; channel: string; status: string; subject: string; body: string; created_at: string; sent_at: string|null };
 export type Payment = { id: string|number; campaign: string; amount: string; currency: string; status: string; verified_at: string|null; created_at: string };
 export type PaymentInstructions = { configured: boolean; upi_id: string|null; payee_name: string|null; instructions: string|null };
+export type ServicePlan = "NORMAL_APPLY" | "COLD_APPLY" | "FULL_THROTTLE";
+export type InquiryStatus = "OPEN" | "CONTACTED" | "CONVERTED" | "CLOSED";
+export type Inquiry = { id: string; reference: string; plan: ServicePlan; status: InquiryStatus; created_at: string; updated_at: string; campaign_id: string | null; whatsapp_url: string | null };
+export type PublicContact = { whatsapp_configured: boolean; support_email: string | null };
 
 async function getJson<T>(getToken: () => Promise<string|null>, path: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(`${apiUrl}/api/v1/${path}`, { headers: await authorizationHeaders(getToken, signal), cache: "no-store", signal });
@@ -93,9 +97,21 @@ export const getDashboard = (token: () => Promise<string|null>, signal?: AbortSi
 export const getApplications = (token: () => Promise<string|null>, query = "", signal?: AbortSignal) => getJson<Application[]>(token, `applications/${query ? `?${query}` : ""}`, signal);
 export const getOutreach = (token: () => Promise<string|null>, query = "", signal?: AbortSignal) => getJson<Outreach[]>(token, `outreach/${query ? `?${query}` : ""}`, signal);
 export const getEvents = (token: () => Promise<string|null>, query = "", signal?: AbortSignal) => getJson<CampaignEvent[]>(token, `events/${query ? `?${query}` : ""}`, signal);
-export const getNotifications = (token: () => Promise<string|null>, signal?: AbortSignal, campaign = "") => getJson<Notification[]>(token, `notifications/${campaign ? `?${new URLSearchParams({campaign})}` : ""}`, signal);
-export const getPayments = (token: () => Promise<string|null>, signal?: AbortSignal, campaign = "") => getJson<Payment[]>(token, `billing/payments/${campaign ? `?${new URLSearchParams({campaign})}` : ""}`, signal);
+export const getNotifications = (token: () => Promise<string|null>, signal?: AbortSignal, campaign = "", limit = 50, offset = 0) => getJson<Notification[]>(token, `notifications/?${new URLSearchParams({ ...(campaign ? {campaign} : {}), limit: String(limit), offset: String(offset) })}`, signal);
+export const getPayments = (token: () => Promise<string|null>, signal?: AbortSignal, campaign = "", limit = 50, offset = 0) => {
+  const query = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (campaign) query.set("campaign", campaign);
+  return getJson<Payment[]>(token, `billing/payments/?${query}`, signal);
+};
 export const getPaymentInstructions = (token: () => Promise<string|null>, signal?: AbortSignal) => getJson<PaymentInstructions>(token, "billing/instructions/", signal);
+export const getInquiries = (token: () => Promise<string|null>, signal?: AbortSignal) => getJson<Inquiry[]>(token, "candidate/inquiries/", signal);
+export const getPublicContact = (signal?: AbortSignal) => fetch(`${apiUrl}/api/v1/public/contact/`, { cache: "no-store", signal }).then(async response => { if (!response.ok) throw await responseError(response, "Contact options are unavailable."); return await response.json() as PublicContact; });
+export async function createInquiry(token: () => Promise<string|null>, plan: ServicePlan, signal?: AbortSignal): Promise<Inquiry> {
+  const response = await fetch(`${apiUrl}/api/v1/candidate/inquiries/`, { method: "POST", headers: { ...(await authorizationHeaders(token, signal)), "Content-Type": "application/json" }, body: JSON.stringify({ plan }), cache: "no-store", signal });
+  if (!response.ok) throw await responseError(response, "We could not save your plan selection.");
+  return await response.json() as Inquiry;
+}
+export { isSafeWhatsAppUrl } from "../app/safe-redirect";
 export async function downloadResume(token: () => Promise<string|null>, id: string|number): Promise<{url:string; expires_in:number}> {
   const response = await fetch(`${apiUrl}/api/v1/resumes/${id}/download/`, {method: "POST", headers: await authorizationHeaders(token), cache: "no-store"});
   if (!response.ok) throw await responseError(response, "We could not authorize the resume download.");

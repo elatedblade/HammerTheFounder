@@ -1,5 +1,6 @@
 from django.http import Http404
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import Count, Q
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -8,6 +9,8 @@ from apps.users.models import User
 from apps.candidates.selectors import get_operational_candidates
 from apps.candidates.review import review_candidate
 from apps.dashboard.selectors import campaign_metrics
+from apps.dashboard.selectors import submitted_application_q
+from apps.campaigns.selectors import get_visible_campaigns
 from .common import bounded
 from .selectors import records
 from .services import write_record, transition_record, task_action
@@ -109,12 +112,24 @@ class CandidateReviewView(APIView):
     permission_classes = (IsOperatorOrAdmin,)
 
     def get(self, request, candidate_id=None):
-        queryset = get_operational_candidates(request.user)
+        visible_campaigns = get_visible_campaigns(request.user)
+        queryset = get_operational_candidates(request.user).annotate(
+            applications_submitted=Count(
+                "applications",
+                filter=submitted_application_q("applications__") & Q(
+                    applications__campaign__in=visible_campaigns
+                ),
+                distinct=True,
+            )
+        ).order_by("full_name", "id")
         if candidate_id:
             profile = queryset.filter(pk=candidate_id).first()
             if profile is None:
                 raise Http404
             return Response(OperatorCandidateSerializer(profile).data)
+        q = request.query_params.get("q", "").strip()[:200]
+        if q:
+            queryset = queryset.filter(Q(full_name__icontains=q) | Q(user__email__icontains=q))
         return Response(OperatorCandidateSerializer(bounded(queryset, request.query_params), many=True).data)
 
     def patch(self, request, candidate_id=None):

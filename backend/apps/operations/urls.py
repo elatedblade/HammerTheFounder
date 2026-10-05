@@ -1,8 +1,14 @@
 from django.urls import path
+from .application_create import ApplicationCreateView
+from .application_stage import ApplicationStageView
 from .views import ResourceView, TransitionView, TaskActionView, MetricsView, CandidateReviewView, OperatorListView
+from .outreach_create import OutreachCreateView
 
 app_name = "operations"
 urlpatterns = [
+    path("outreach/create/", OutreachCreateView.as_view(), name="outreach-create"),
+    path("applications/create/", ApplicationCreateView.as_view(), name="application-create"),
+    path("applications/<uuid:object_id>/stage/", ApplicationStageView.as_view(), name="application-stage"),
     path("admin/candidates/", CandidateReviewView.as_view(), name="candidates"),
     path("admin/candidates/<int:candidate_id>/", CandidateReviewView.as_view(), name="candidate-detail"),
     path("admin/operators/", OperatorListView.as_view(), name="operators"),

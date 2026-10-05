@@ -1,54 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  --page: #f7f9fc;
-  --surface: #ffffff;
-  --surface-soft: #f1f5fa;
-  --surface-blue: #edf4ff;
-  --ink: #17243a;
-  --ink-strong: #0c172b;
-  --muted: #66758c;
-  --subtle: #8a98ab;
-  --line: #e1e8f1;
-  --line-strong: #ccd7e5;
-  --accent: #1769e8;
-  --accent-hover: #0d56c8;
-  --accent-soft: #e5efff;
-  --success: #13795b;
-  --success-soft: #e8f7f0;
-  --warning: #895e0a;
-  --warning-soft: #fff7df;
-  --danger: #b33d45;
-  --danger-soft: #fff0f0;
-  --shadow: 0 20px 55px rgb(34 67 112 / 0.07);
+  --page: #f7f2eb;
+  --surface: #fffaf4;
+  --surface-soft: #f5cbd7;
+  --surface-blue: #f1e65f;
+  --ink: #221b22;
+  --ink-strong: #3a001d;
+  --muted: #796e75;
+  --subtle: #a58d98;
+  --line: #dfd2d8;
+  --line-strong: #c9b5bf;
+  --accent: #ff003c;
+  --accent-hover: #d90032;
+  --accent-soft: #f5cbd7;
+  --success: #237b59;
+  --success-soft: #e4f4ec;
+  --warning: #795e00;
+  --warning-soft: #fffbd5;
+  --danger: #bd2144;
+  --danger-soft: #ffe8ee;
+  --shadow: 0 20px 55px rgb(100 0 40 / 0.10);
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --page: #111923;
-    --surface: #182330;
-    --surface-soft: #202d3c;
-    --surface-blue: #1a3153;
-    --ink: #e8eef7;
-    --ink-strong: #f7faff;
-    --muted: #a5b3c5;
-    --subtle: #8394aa;
-    --line: #2b3a4c;
-    --line-strong: #3a4c62;
-    --accent: #2f78e8;
-    --accent-hover: #2165cb;
-    --accent-soft: #223b65;
-    --success: #62d2a9;
-    --success-soft: #173e35;
-    --warning: #f2c86e;
-    --warning-soft: #44391e;
-    --danger: #ff979b;
-    --danger-soft: #4b252a;
-    --shadow: 0 20px 55px rgb(0 0 0 / 0.18);
-    color-scheme: dark;
-  }
-}
 
 * { box-sizing: border-box; }
 html { min-width: 320px; background: var(--page); }
@@ -78,8 +53,14 @@ a { color: inherit; text-decoration: none; }
   border-bottom: 1px solid var(--line);
 }
 .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink-strong); font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
-.brand-mark { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; background: var(--accent); color: white; font-size: 16px; font-weight: 800; }
+.brand-mark { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: white; font-size: 11px; font-weight: 800; }
 .topbar-right { display: flex; align-items: center; gap: 24px; }
+.signed-in-nav { display:flex; gap:6px; align-items:center; font-size:13px; font-weight:650; }
+.signed-in-nav a { padding:9px 12px; border-radius:999px; color:var(--muted); }
+.signed-in-nav a[aria-current="page"] { background:var(--accent-soft); color:var(--accent); }
+@media (max-width:600px) { .signed-in-nav { gap:0; font-size:12px; }.signed-in-nav a { padding:8px; }.app-topbar { gap:10px; } }
+.signed-in-nav { display: flex; align-items: center; gap: 18px; margin-left: auto; color: var(--muted); font-size: 13px; font-weight: 650; }
+.signed-in-nav a:hover, .signed-in-nav a:focus-visible { color: var(--accent); }
 .coming-soon { color: var(--muted); font-size: 12px; letter-spacing: 0.01em; }
 .coming-soon span { color: var(--subtle); }
 
@@ -192,6 +173,10 @@ a { color: inherit; text-decoration: none; }
 .workspace-jump a:hover { text-decoration: underline; }
 #profile, #progress, #documents, #campaigns { scroll-margin-top: 24px; }
 .progress-panel { padding: 34px; margin-top: 26px; min-width: 0; }
+.plan-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 24px; }
+.plan-grid > .panel { margin: 0; padding: 24px; min-width: 0; }
+.plan-grid ul { min-height: 108px; }
+@media (max-width: 900px) { .plan-grid { grid-template-columns: 1fr; } .plan-grid ul { min-height: 0; } }
 .workspace-tabs { display: flex; flex-wrap: wrap; gap: 7px; padding: 22px 0; }
 .workspace-tabs button { padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font-size: 13px; }
 .workspace-tabs button:hover, .workspace-tabs button.is-selected { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }

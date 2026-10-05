@@ -1,0 +1,51 @@
+# Local-only clean-database verification. Reuses images built by the default
+# hammerthefounder Compose project; run with -p htf-restore-test and --no-build.
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: htf
+      POSTGRES_USER: htf
+      POSTGRES_PASSWORD: htf
+    ports: !override
+      - "127.0.0.1:15432:5432"
+  redis:
+    ports: !override
+      - "127.0.0.1:16379:6379"
+  backend:
+    image: hammerthefounder-backend:latest
+    environment:
+      DATABASE_URL: postgresql://htf:htf@postgres:5432/htf
+      REDIS_URL: redis://redis:6379/0
+      CORS_ALLOWED_ORIGINS: http://localhost:13000,http://localhost:13001
+      AWS_ACCESS_KEY_ID: ""
+      AWS_SECRET_ACCESS_KEY: ""
+      RESEND_API_KEY: ""
+      OMNIROUTE_API_KEY: ""
+      SENTRY_DSN: ""
+    ports: !override
+      - "127.0.0.1:18000:8000"
+  worker:
+    image: hammerthefounder-worker:latest
+    environment:
+      DATABASE_URL: postgresql://htf:htf@postgres:5432/htf
+      REDIS_URL: redis://redis:6379/0
+      AWS_ACCESS_KEY_ID: ""
+      AWS_SECRET_ACCESS_KEY: ""
+      RESEND_API_KEY: ""
+      OMNIROUTE_API_KEY: ""
+      SENTRY_DSN: ""
+  client-web:
+    image: hammerthefounder-client-web:latest
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:18000
+      NEXT_PUBLIC_ADMIN_URL: http://localhost:13001
+      NEXT_PUBLIC_SENTRY_DSN: ""
+    ports: !override
+      - "127.0.0.1:13000:3000"
+  admin-web:
+    image: hammerthefounder-admin-web:latest
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:18000
+      NEXT_PUBLIC_SENTRY_DSN: ""
+    ports: !override
+      - "127.0.0.1:13001:3000"

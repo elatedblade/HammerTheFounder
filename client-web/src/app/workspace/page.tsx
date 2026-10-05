@@ -1,5 +1,5 @@
-import AuthGate from "../auth-gate";
+import { redirect } from "next/navigation";
 
 export default function WorkspacePage() {
-  return <AuthGate />;
+  redirect("/dashboard");
 }

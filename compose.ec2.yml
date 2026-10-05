@@ -1,0 +1,126 @@
+# Single-EC2 evaluation topology. Images are built on a CI/build host and
+# transferred to the instance; this file intentionally has no public ports.
+# Run with: docker compose --env-file infra/ec2/.env -f compose.ec2.yml up -d
+x-backend: &backend
+  image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE to a prebuilt backend image}
+  init: true
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+  environment:
+    DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.evaluation}
+    DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set a unique Django secret}
+    DJANGO_DEBUG: ${DJANGO_DEBUG:-false}
+    DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+    CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
+    CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:3000,http://localhost:3001}
+    DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL}
+    REDIS_URL: ${REDIS_URL:?Set REDIS_URL}
+    CACHE_URL: ${CACHE_URL:-redis://redis:6379/1}
+    CLERK_ISSUER_URL: ${CLERK_ISSUER_URL:-}
+    CLERK_JWT_AUDIENCE: ${CLERK_JWT_AUDIENCE:-}
+    CLERK_JWT_PUBLIC_KEY: ${CLERK_JWT_PUBLIC_KEY:-}
+    CLERK_JWKS_URL: ${CLERK_JWKS_URL:-}
+    AWS_REGION: ${AWS_REGION:-}
+    AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+    AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+    AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    RESEND_API_KEY: ${RESEND_API_KEY:-}
+    RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
+    OMNIROUTE_BASE_URL: ${OMNIROUTE_BASE_URL:-}
+    OMNIROUTE_API_KEY: ${OMNIROUTE_API_KEY:-}
+    OMNIROUTE_MODEL: ${OMNIROUTE_MODEL:-}
+    SENTRY_DSN: ${SENTRY_DSN:-}
+    HTF_TIME_ZONE: ${HTF_TIME_ZONE:-Asia/Kolkata}
+    UPI_ID: ${UPI_ID:-}
+    UPI_PAYEE_NAME: ${UPI_PAYEE_NAME:-}
+    UPI_INSTRUCTIONS: ${UPI_INSTRUCTIONS:-}
+    WHATSAPP_BUSINESS_NUMBER: ${WHATSAPP_BUSINESS_NUMBER:-}
+    SUPPORT_EMAIL: ${SUPPORT_EMAIL:-}
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres-ec2:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    restart: unless-stopped
+    volumes:
+      - redis-ec2:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    <<: *backend
+    command: ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "${WEB_CONCURRENCY:-1}", "--timeout", "60", "--access-logfile", "-", "--access-logformat", "%(s)s %(L)s", "--error-logfile", "-"]
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  worker:
+    <<: *backend
+    command: ["celery", "-A", "config", "worker", "--loglevel=WARNING", "--concurrency=${CELERY_CONCURRENCY:-1}"]
+
+  client-web:
+    image: ${CLIENT_IMAGE:?Set CLIENT_IMAGE to a prebuilt client image}
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_AUTH_MODE: ${NEXT_PUBLIC_AUTH_MODE:-clerk}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:?Set the Clerk development publishable key}
+      NEXT_PUBLIC_ADMIN_URL: ${NEXT_PUBLIC_ADMIN_URL:-http://localhost:3001}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:-}
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  admin-web:
+    image: ${ADMIN_IMAGE:?Set ADMIN_IMAGE to a prebuilt admin image}
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_AUTH_MODE: ${NEXT_PUBLIC_AUTH_MODE:-clerk}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:?Set the Clerk development publishable key}
+      NEXT_PUBLIC_ADMIN_URL: ${NEXT_PUBLIC_ADMIN_URL:-http://localhost:3001}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:-}
+    ports:
+      - "127.0.0.1:3001:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres-ec2:
+  redis-ec2:

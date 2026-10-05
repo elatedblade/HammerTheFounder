@@ -3,8 +3,8 @@ import type { ApiClient, CurrentUser } from "../../lib/api";
 export type RecordData = { id: string | number; [key: string]: unknown };
 export type Option = { value: string; label: string };
 export type Field = {
-  name: string; label: string; type?: "text" | "email" | "url" | "number" | "date" | "datetime-local" | "textarea" | "json" | "list" | "select";
-  required?: boolean; options?: string[]; lookup?: string; nullable?: boolean; min?: number; max?: number; help?: string;
+  name: string; label: string; type?: "text" | "email" | "url" | "number" | "date" | "datetime-local" | "textarea" | "json" | "list" | "select" | "checkbox";
+  required?: boolean; options?: (string | Option)[]; lookup?: string; nullable?: boolean; min?: number; max?: number; help?: string;
   visibleWhen?: (values: Record<string, string>) => boolean;
   requiredWhen?: (values: Record<string, string>) => boolean;
   future?: boolean;
@@ -12,11 +12,12 @@ export type Field = {
 export type Action = {
   label: string; route: string; fields?: Field[] | ((row: RecordData) => Field[]); body?: Record<string, unknown>; method?: "POST" | "PATCH";
   confirm?: string; admin?: boolean; when?: (row: RecordData) => boolean;
+  initial?: (row: RecordData) => Record<string, unknown>;
 };
 export type Resource = {
   title: string; path: string; columns: string[]; fields?: Field[]; editFields?: Field[] | ((row: RecordData) => Field[]); actions?: Action[];
   scoped?: boolean; description?: string; adminEdit?: boolean; fetchDetail?: boolean; createConfirm?: string; paginated?: boolean;
-  statusOptions?: string[]; pageSize?: number;
+  statusOptions?: string[]; stageOptions?: Option[]; pageSize?: number;
 };
 export type WorkspaceContext = {
   api: ApiClient; user: CurrentUser; campaign: string; revision: number; refresh: () => void;

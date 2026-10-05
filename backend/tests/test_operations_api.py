@@ -113,7 +113,8 @@ def test_company_and_job_normalized_dedup(workspace):
     assert client.post(BASE + "jobs/", {"company": str(company.pk), "title": "Bad", "external_source": "board"}, format="json").status_code == 400
 
 
-def test_outreach_requires_manual_ready_then_sent_and_suppression_blocks(workspace):
+@pytest.mark.parametrize("prepare_first", [False, True])
+def test_outreach_preparation_and_suppression_blocks_manual_sent(workspace, prepare_first):
     owner, operator, admin, _, _, campaign, _, _, contact = workspace
     client = api(operator)
     data = {"campaign": str(campaign.pk), "contact": str(contact.pk), "channel": "EMAIL", "subject": "Hello", "body": "A reviewed introduction", "notes": "internal"}
@@ -121,8 +122,8 @@ def test_outreach_requires_manual_ready_then_sent_and_suppression_blocks(workspa
     assert result.status_code == 201
     oid = result.json()["id"]
     route = BASE + f"outreach/{oid}/transition/"
-    assert client.post(route, {"status": "SENT"}, format="json").status_code == 409
-    assert client.post(route, {"status": "READY"}, format="json").status_code == 200
+    if prepare_first:
+        assert client.post(route, {"status": "READY"}, format="json").status_code == 200
     assert client.post(BASE + "suppression/", {"email": "FOUNDER@acme.example", "reason": "Opted out"}, format="json").status_code == 201
     assert client.post(route, {"status": "SENT"}, format="json").status_code == 409
     assert Outreach.objects.get(pk=oid).sent_at is None
@@ -130,6 +131,149 @@ def test_outreach_requires_manual_ready_then_sent_and_suppression_blocks(workspa
     visible = api(owner).get(BASE + "outreach/").json()[0]
     for private in ("body", "subject", "notes", "thread_reference", "contact"):
         assert private not in visible
+
+
+@pytest.mark.parametrize("plan", ["NORMAL_APPLY", "COLD_APPLY", "FULL_THROTTLE"])
+@pytest.mark.parametrize("channel", ["EMAIL", "LINKEDIN", "WHATSAPP"])
+def test_manual_outreach_sent_then_responded_is_visible_in_customer_dashboard(workspace, plan, channel):
+    owner, operator, _, other, _, campaign, _, _, contact = workspace
+    campaign.plan = plan
+    campaign.save()
+    contact.email = ""
+    contact.profile_url = ""
+    contact.save()
+    outreach = Outreach.objects.create(campaign=campaign, contact=contact, channel=channel, body="Manual external outreach")
+    route = BASE + f"outreach/{outreach.pk}/transition/"
+    client = api(operator)
+    assert client.post(route, {"status": "REPLIED"}, format="json").status_code == 409
+    assert api(owner).post(route, {"status": "SENT"}, format="json").status_code == 403
+    assert api(other).post(route, {"status": "SENT"}, format="json").status_code == 404
+    sent = client.post(route, {"status": "SENT", "notes": "Operator-only note"}, format="json")
+    assert sent.status_code == 200, sent.json()
+    outreach.refresh_from_db()
+    assert outreach.status == "SENT" and outreach.sent_at is not None
+    sent_at = outreach.sent_at
+    assert api(owner).get(BASE + "dashboard/").json()["outreach"]["sent"] == 1
+    result = api(owner).get(BASE + f"outreach/{outreach.pk}/").json()
+    assert result["status"] == "SENT" and result["sent_at"]
+    assert "notes" not in result and "body" not in result
+    response = client.post(route, {"status": "REPLIED"}, format="json")
+    assert response.status_code == 200, response.json()
+    outreach.refresh_from_db()
+    assert outreach.status == "REPLIED" and outreach.reply_at is not None
+    assert outreach.sent_at == sent_at
+    result = api(owner).get(BASE + "outreach/?status=REPLIED").json()
+    assert len(result) == 1 and result[0]["status"] == "REPLIED" and result[0]["reply_at"]
+    metrics = api(owner).get(BASE + "dashboard/").json()["outreach"]
+    assert metrics["sent"] == 0 and metrics["replies"] == 1
+    assert metrics["sent_lifetime"] == metrics["replied_lifetime"] == 1
+    assert api(other).get(BASE + f"outreach/{outreach.pk}/").status_code == 404
+    event = Event.objects.filter(event_type="outreach.status_changed", payload__to="REPLIED").first()
+    assert event is not None and AuditEntry.objects.filter(event=event, actor=operator).exists()
+
+
+def test_outreach_candidate_filter_intersects_candidate_and_campaign_visibility(workspace):
+    owner, operator, _, other, candidate, campaign, _, _, contact = workspace
+    other_owner = user("other-owner")
+    other_candidate = CandidateProfile.objects.create(
+        user=other_owner, full_name="Grace", location="Paris", experience_summary="Engineer", target_roles=["Engineer"]
+    )
+    other_company = Company.objects.create(name="Other Co", identity_key="domain:other.example")
+    other_contact = Contact.objects.create(
+        company=other_company, name="Other Founder", email="other@other.example", identity_key="contact-other"
+    )
+    split_company = Company.objects.create(name="Split Co", identity_key="domain:split.example")
+    split_contact = Contact.objects.create(
+        company=split_company, name="Split Founder", email="split@split.example", identity_key="contact-split"
+    )
+    split_campaign = Campaign.objects.create(
+        candidate=candidate, plan="FULL_THROTTLE", status="ACTIVE", assigned_to=other
+    )
+    other_campaign = Campaign.objects.create(
+        candidate=other_candidate, plan="FULL_THROTTLE", status="ACTIVE", assigned_to=operator
+    )
+    own = Outreach.objects.create(campaign=campaign, contact=contact, channel="EMAIL", status="REPLIED")
+    hidden_same_candidate = Outreach.objects.create(
+        campaign=split_campaign, contact=split_contact, channel="EMAIL", status="REPLIED"
+    )
+    other_record = Outreach.objects.create(
+        campaign=other_campaign, contact=other_contact, channel="EMAIL", status="REPLIED"
+    )
+
+    operator_rows = api(operator).get(BASE + "outreach/", {"candidate": candidate.pk, "stage": "RESPONDED"})
+    assert operator_rows.status_code == 200
+    assert [row["id"] for row in operator_rows.json()] == [str(own.pk)]
+    assert [row["id"] for row in api(other).get(BASE + "outreach/", {"candidate": candidate.pk}).json()] == [
+        str(hidden_same_candidate.pk)
+    ]
+
+    assert {row["id"] for row in api(owner).get(BASE + "outreach/", {"candidate": candidate.pk}).json()} == {
+        str(own.pk), str(hidden_same_candidate.pk)
+    }
+    assert [row["id"] for row in api(other_owner).get(BASE + "outreach/", {"candidate": other_candidate.pk}).json()] == [str(other_record.pk)]
+    assert api(owner).get(BASE + "outreach/", {"candidate": other_candidate.pk}).json() == []
+    assert [row["id"] for row in api(operator).get(BASE + "outreach/", {"candidate": other_candidate.pk}).json()] == [str(other_record.pk)]
+    assert api(other).get(BASE + "outreach/", {"candidate": other_candidate.pk}).json() == []
+    assert api(operator).get(BASE + "outreach/", {"candidate": candidate.pk, "campaign": other_campaign.pk}).json() == []
+    assert api(operator).get(BASE + f"campaigns/{campaign.pk}/outreach/", {"candidate": other_candidate.pk}).json() == []
+    assert api(operator).get(BASE + "outreach/", {"candidate": candidate.pk, "campaign": split_campaign.pk}).status_code == 404
+
+    paged = api(operator).get(BASE + "outreach/", {"candidate": candidate.pk, "limit": 1, "offset": 0})
+    assert paged.status_code == 200 and [row["id"] for row in paged.json()] == [str(own.pk)]
+
+
+@pytest.mark.parametrize("candidate", ["", "0", "-1", "abc", "1.5", "true"])
+def test_outreach_candidate_filter_rejects_invalid_ids(workspace, candidate):
+    _, operator, *_ = workspace
+    response = api(operator).get(BASE + "outreach/", {"candidate": candidate})
+    assert response.status_code == 400
+    assert "candidate" in response.json()["details"]
+
+
+def test_outreach_candidate_stage_and_pagination_intersect(workspace):
+    _, operator, _, _, candidate, campaign, _, _, contact = workspace
+    for channel, status in (("EMAIL", "REPLIED"), ("LINKEDIN", "POSITIVE_REPLY"), ("WHATSAPP", "SENT")):
+        Outreach.objects.create(campaign=campaign, contact=contact, channel=channel, status=status)
+    expected = [str(pk) for pk in Outreach.objects.filter(status__in=("REPLIED", "POSITIVE_REPLY")).values_list("pk", flat=True)]
+    client = api(operator)
+    params = {"candidate": candidate.pk, "stage": "RESPONDED", "limit": 1}
+    first = client.get(BASE + "outreach/", params)
+    second = client.get(BASE + "outreach/", {**params, "offset": 1})
+    exhausted = client.get(BASE + "outreach/", {**params, "offset": 2})
+    assert first.status_code == second.status_code == exhausted.status_code == 200
+    assert [row["id"] for row in first.json() + second.json()] == expected
+    assert exhausted.json() == []
+    response = client.get(BASE + "outreach/", {"candidate": candidate.pk, "stage": "RESPONDED", "status": "SENT"})
+    assert response.status_code == 200 and response.json() == []
+
+
+def test_outreach_candidate_filter_intersects_operational_candidate_scope(workspace):
+    owner, operator, _, _, candidate, campaign, _, _, contact = workspace
+    Outreach.objects.create(campaign=campaign, contact=contact, status="REPLIED")
+    owner.is_active = False
+    owner.save(update_fields=["is_active"])
+    response = api(operator).get(BASE + "outreach/", {"candidate": candidate.pk})
+    assert response.status_code == 200 and response.json() == []
+
+
+@pytest.mark.parametrize("status", ["DRAFT", "TARGET_IDENTIFIED", "CONTACT_VERIFIED", "DRAFTED", "REVIEW_REQUIRED", "READY"])
+def test_manual_sent_available_from_each_outreach_preparation_status(workspace, status):
+    _, operator, _, _, _, campaign, _, _, contact = workspace
+    outreach = Outreach.objects.create(campaign=campaign, contact=contact, channel="EMAIL", body="Manual outreach", status=status)
+    response = api(operator).post(BASE + f"outreach/{outreach.pk}/transition/", {"status": "SENT"}, format="json")
+    assert response.status_code == 200, response.json()
+
+
+@pytest.mark.parametrize("status", ["PAUSED", "DRAFT", "COMPLETED", "CANCELLED"])
+def test_manual_sent_still_requires_active_outreach_campaign(workspace, status):
+    _, operator, _, _, _, campaign, _, _, contact = workspace
+    outreach = Outreach.objects.create(campaign=campaign, contact=contact, channel="EMAIL", body="Manual outreach")
+    campaign.status = status
+    campaign.save()
+    response = api(operator).post(BASE + f"outreach/{outreach.pk}/transition/", {"status": "SENT"}, format="json")
+    assert response.status_code == 409
+    outreach.refresh_from_db()
+    assert outreach.status == "DRAFT" and outreach.sent_at is None
 
 
 def test_human_task_claim_complete_and_assignment_roles(workspace):
@@ -302,7 +446,9 @@ def test_documented_outreach_flow_delivery_negative_reply_and_audit(workspace):
     assert HumanTask.objects.filter(campaign=campaign, task_type="OUTREACH_REVIEW").count() == 1
     assert client.patch(BASE + f"outreach/{oid}/", {"body": "Cannot change sent text"}, format="json").status_code == 409
     metrics = client.get(BASE + "dashboard/").json()["outreach"]
-    assert metrics["sent"] == metrics["replies"] == metrics["negative_replies"] == 1
+    assert metrics["sent"] == metrics["delivered"] == 0
+    assert metrics["replies"] == metrics["negative_replies"] == 1
+    assert metrics["sent_lifetime"] == metrics["replied_lifetime"] == metrics["delivered_lifetime"] == 1
     assert metrics["by_status"]["NEGATIVE_REPLY"] == 1
     audit = Event.objects.filter(event_type="outreach.status_changed", payload__to="NEGATIVE_REPLY").get()
     assert audit.actor == operator
@@ -342,3 +488,131 @@ def test_all_documented_states_have_a_metric_bucket(workspace):
     assert set(metrics["outreach"]["by_status"]) == set(Outreach.Status.values)
     assert metrics["applications"]["by_status"]["APPLICATION_FAILED"] == 0
     assert metrics["outreach"]["by_status"]["TARGET_IDENTIFIED"] == 0
+
+
+@pytest.mark.parametrize("preparation", [None, "DISCOVERED", "SHORTLISTED"])
+@pytest.mark.parametrize("outcome", ["REJECTED", "WITHDRAWN"])
+def test_explicit_submission_updates_scoped_counts_and_preserves_evidence(workspace, preparation, outcome):
+    owner, operator, admin, other, candidate, campaign, _, job, _ = workspace
+    client = api(operator)
+    created = client.post(BASE + "applications/", {"campaign": str(campaign.pk), "job": str(job.pk)}, format="json")
+    assert created.status_code == 201
+    data = created.json()
+    assert data["status"] == "SAVED" and data["submitted_at"] is None
+    assert data["candidate_id"] == candidate.pk
+    assert data["candidate_name"] == candidate.full_name
+    assert data["candidate_email"] == owner.email
+    assert data["campaign_plan"] == campaign.plan
+    assert data["campaign_status"] == "ACTIVE"
+    route = BASE + f"applications/{data['id']}/transition/"
+    if preparation:
+        assert client.post(route, {"status": preparation}, format="json").status_code == 200
+
+    def assert_counts(submitted):
+        for identity in (owner, operator, admin):
+            metrics = api(identity).get(BASE + "dashboard/").json()["applications"]
+            assert metrics["total"] == 1 and metrics["submitted"] == submitted
+        assert api(other).get(BASE + "dashboard/").json()["applications"]["submitted"] == 0
+        for identity in (operator, admin):
+            candidate_data = api(identity).get(BASE + f"admin/candidates/{candidate.pk}/").json()
+            assert candidate_data["applications_submitted"] == submitted
+
+    assert_counts(0)
+    result = client.post(route, {"status": "SUBMITTED"}, format="json")
+    assert result.status_code == 200, result.data
+    timestamp = result.json()["submitted_at"]
+    assert timestamp
+    assert_counts(1)
+    assert client.post(route, {"status": "SUBMITTED"}, format="json").status_code == 409
+    result = client.post(route, {"status": outcome}, format="json")
+    assert result.status_code == 200 and result.json()["submitted_at"] == timestamp
+    assert_counts(1)
+    customer_data = api(owner).get(BASE + f"applications/{data['id']}/").json()
+    assert customer_data["status"] == outcome
+    assert not {"candidate_id", "candidate_name", "candidate_email"} & customer_data.keys()
+
+
+@pytest.mark.parametrize("field,value", [
+    ("candidate", 999), ("candidate_id", 999), ("candidate_name", "Spoof"),
+    ("candidate_email", "spoof@example.com"), ("campaign_plan", "NORMAL_APPLY"),
+    ("campaign_status", "ACTIVE"), ("status", "SUBMITTED"),
+    ("submitted_at", "2026-01-01T00:00:00Z"),
+])
+def test_application_identity_and_submission_fields_cannot_be_spoofed(workspace, field, value):
+    _, operator, _, _, candidate, campaign, _, job, _ = workspace
+    client = api(operator)
+    payload = {"campaign": str(campaign.pk), "job": str(job.pk)}
+    assert client.post(BASE + "applications/", {**payload, field: value}, format="json").status_code == 400
+    assert not Application.objects.exists()
+    created = client.post(BASE + "applications/", payload, format="json").json()
+    route = BASE + f"applications/{created['id']}/"
+    assert client.patch(route, {field: value}, format="json").status_code == 400
+    if field != "status":
+        assert client.post(route + "transition/", {"status": "SUBMITTED", field: value}, format="json").status_code == 400
+    obj = Application.objects.get(pk=created["id"])
+    assert obj.candidate_id == candidate.pk
+    assert obj.status == "SAVED" and obj.submitted_at is None
+
+
+@pytest.mark.parametrize("blocker", ["DRAFT", "ONBOARDING", "READY", "PAUSED", "COMPLETED", "CANCELLED", "CLOSED"])
+def test_explicit_submission_respects_existing_campaign_and_job_guards(workspace, blocker):
+    _, operator, _, _, _, campaign, _, job, _ = workspace
+    obj = Application.objects.create(campaign=campaign, job=job)
+    if blocker == "CLOSED":
+        job.status = blocker
+        job.save()
+    else:
+        campaign.status = blocker
+        campaign.save()
+    result = api(operator).post(BASE + f"applications/{obj.pk}/transition/", {"status": "SUBMITTED"}, format="json")
+    assert result.status_code == 409
+    obj.refresh_from_db()
+    assert obj.status == "SAVED" and obj.submitted_at is None
+    assert not Event.objects.filter(event_type="applications.status_changed").exists()
+
+
+@pytest.mark.parametrize("plan", ["NORMAL_APPLY", "COLD_APPLY", "FULL_THROTTLE"])
+def test_current_marketed_plans_can_record_confirmed_submissions(workspace, plan):
+    owner, operator, _, _, candidate, campaign, _, job, _ = workspace
+    campaign.plan = plan
+    campaign.save()
+    obj = Application.objects.create(campaign=campaign, job=job)
+    response = api(operator).post(BASE + f"applications/{obj.pk}/transition/", {"status": "SUBMITTED"}, format="json")
+    assert response.status_code == 200
+    obj.refresh_from_db()
+    assert obj.submitted_at is not None and obj.status == "SUBMITTED"
+    assert api(owner).get(BASE + "dashboard/").json()["applications"]["submitted"] == 1
+    assert api(operator).get(BASE + f"admin/candidates/{candidate.pk}/").json()["applications_submitted"] == 1
+
+
+def test_submission_visibility_and_campaign_readiness_cannot_be_bypassed(workspace):
+    owner, operator, _, other, _, campaign, _, job, _ = workspace
+    obj = Application.objects.create(campaign=campaign, job=job)
+    route = BASE + f"applications/{obj.pk}/transition/"
+    assert api(owner).post(route, {"status": "SUBMITTED"}, format="json").status_code == 403
+    assert api(other).post(route, {"status": "SUBMITTED"}, format="json").status_code == 404
+    outsider = user("submission-outsider")
+    assert api(outsider).get(BASE + f"applications/{obj.pk}/").status_code == 404
+    assert api(outsider).get(BASE + "applications/", {"campaign": str(campaign.pk)}).status_code == 404
+    assert api(other).get(BASE + "applications/", {"campaign": str(campaign.pk)}).status_code == 404
+    campaign.status = "DRAFT"
+    campaign.save()
+    assert api(operator).post(BASE + f"campaigns/{campaign.pk}/start/").status_code == 409
+    assert api(operator).post(route, {"status": "SUBMITTED"}, format="json").status_code == 409
+    obj.refresh_from_db()
+    assert obj.status == "SAVED" and obj.submitted_at is None
+
+
+def test_application_identity_serialization_uses_eager_loaded_actual_candidate(workspace, django_assert_num_queries):
+    from apps.operations.selectors import records
+    from apps.operations.serializers import ApplicationSerializer
+    from types import SimpleNamespace
+
+    owner, operator, _, _, candidate, campaign, company, job, _ = workspace
+    Application.objects.create(campaign=campaign, job=job)
+    second_job = Job.objects.create(company=company, title="Second", identity_key="identity-second")
+    Application.objects.create(campaign=campaign, job=second_job)
+    objects = list(records(operator, "applications"))
+    with django_assert_num_queries(0):
+        data = ApplicationSerializer(objects, many=True, context={"request": SimpleNamespace(user=operator)}).data
+    assert all(row["candidate_id"] == candidate.pk and row["candidate_email"] == owner.email for row in data)

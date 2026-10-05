@@ -3,6 +3,7 @@ from django.utils import timezone
 from apps.companies.models import Company
 from apps.jobs.models import Job
 from apps.applications.models import Application
+from apps.applications.stages import application_stage
 from apps.contacts.models import Contact
 from apps.outreach.models import Outreach, OutreachTemplate, Suppression
 from apps.tasks.models import HumanTask
@@ -46,19 +47,30 @@ class JobSerializer(StrictModelSerializer):
 
 
 class ApplicationSerializer(StrictModelSerializer):
+    stage = serializers.SerializerMethodField()
     company_name = serializers.CharField(source="job.company.name", read_only=True)
     job_title = serializers.CharField(source="job.title", read_only=True)
+    candidate_id = serializers.IntegerField(read_only=True)
+    candidate_name = serializers.CharField(source="candidate.full_name", read_only=True)
+    candidate_email = serializers.EmailField(source="candidate.user.email", read_only=True)
+    campaign_plan = serializers.CharField(source="campaign.plan", read_only=True)
+    campaign_status = serializers.CharField(source="campaign.status", read_only=True)
 
     class Meta:
         model = Application
-        fields = ("id", "campaign", "job", "company_name", "job_title", "status", "submitted_at", "in_progress_at", "failed_at", "failure_reason", "interview_scheduled_at", "notes", "source_reference", "created_at", "updated_at")
+        fields = ("id", "campaign", "job", "company_name", "job_title", "candidate_id", "candidate_name", "candidate_email", "campaign_plan", "campaign_status", "status", "stage", "submitted_at", "in_progress_at", "failed_at", "failure_reason", "interview_scheduled_at", "notes", "source_reference", "created_at", "updated_at")
         read_only_fields = ("id", "status", "submitted_at", "in_progress_at", "failed_at", "failure_reason", "created_at", "updated_at")
         validators = []
+
+    def get_stage(self, obj):
+        return application_stage(obj.status)
 
     def to_representation(self, obj):
         data = super().to_representation(obj)
         request = self.context.get("request")
         if request and request.user.role == "CLIENT":
+            for key in ("candidate_id", "candidate_name", "candidate_email"):
+                data.pop(key, None)
             data.pop("notes", None)
             data.pop("source_reference", None)
             data.pop("failure_reason", None)

@@ -22,8 +22,9 @@ test("workspace component consumes the tab registry and scope helper", async () 
   assert.match(source, /campaign: scopedCampaign/);
 });
 
-test("workspace renders Outreach with its existing resource dependencies", async () => {
+test("workspace renders one Outreach section and retains inline creation dependencies", async () => {
   const source = await readFile(new URL("../src/components/operations/workspace.tsx", import.meta.url), "utf8");
-  assert.match(source, /tab === "Outreach" && <ResourceGroup resources=\{\[outreach, contacts, suppression, outreachTemplates\]\}/);
-  assert.match(source, /import \{[^}]*contacts[^}]*outreach[^}]*outreachTemplates[^}]*suppression[^}]*\} from "\.\/resources"/s);
+  assert.match(source, /tab === "Outreach" && <ResourcePanel resource=\{outreach\} context=\{context\}/);
+  assert.doesNotMatch(source, /resources=\{\[outreach, contacts, suppression, outreachTemplates\]\}/);
+  assert.match(source, /paths\.companies = "companies\/"; paths\.contacts = "contacts\/"/);
 });

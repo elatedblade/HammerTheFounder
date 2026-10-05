@@ -6,10 +6,10 @@ import {
   getApplications, getCampaigns, getDashboard, getEvents, getNotifications,
   getOutreach, getPaymentInstructions, getPayments,
   type Application, type Outreach,
-  APPLICATION_STATUSES, OUTREACH_STATUSES,
 } from "../lib/api";
 import { selectOverviewMetrics } from "./overview-metrics";
-import { presentOutreachRow, presentOutreachStatus } from "./outreach-presentation";
+import { OUTREACH_STATUS_OPTIONS, outreachQuery, presentOutreachRow, presentOutreachStatus } from "./outreach-presentation";
+import { applicationStageOptions, applicationStageLabel, applicationQuery } from "./application-stages";
 
 type Token = () => Promise<string | null>;
 type View = "overview" | "applications" | "outreach" | "interviews" | "activity" | "notifications" | "payments";
@@ -54,8 +54,9 @@ function Overview({getToken, reloadKey}: {getToken: Token; reloadKey?: number}) 
   const loader = useCallback((signal: AbortSignal) => getDashboard(getToken, signal), [getToken]);
   const resource = useResource(loader, reloadKey);
   const metrics = resource.data ? selectOverviewMetrics(resource.data) : null;
-  return <><p className="muted">Recorded totals across your campaigns, calculated by HTF. Total applications includes unsent records; “In progress” means IN_PROGRESS, and “Under review” means IN_REVIEW or RECRUITER_CONTACTED. Applications and outreach are recorded manually by your team. Refresh to check for updates.</p>
+  return <>
     <ResourceState {...resource}/>
+    <p className="muted">Outreach counts show mutually exclusive current stages: Sent includes delivered messages awaiting a response; Responded includes all reply outcomes.</p>
     {metrics ? <><dl className="metric-grid">{metrics.primary.map(({label, value}) => <div key={label}><dt>{label}</dt><dd>{value === null ? "Unavailable" : value}</dd></div>)}</dl><details className="record-details"><summary>Additional metrics</summary><dl>{metrics.additional.map(({label, value}) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></details></> : null}
     <button className="button button-secondary button-small" type="button" disabled={resource.loading} onClick={resource.retry}>Refresh overview</button>
   </>;
@@ -64,7 +65,8 @@ function Overview({getToken, reloadKey}: {getToken: Token; reloadKey?: number}) 
 function ApplicationDetails({row}: {row: Application}) {
   return <details className="record-details"><summary>View details</summary><dl>
     <div><dt>Campaign</dt><dd>{row.campaign}</dd></div><div><dt>Created</dt><dd>{dateTime(row.created_at)}</dd></div>
-    <div><dt>Last update</dt><dd>{dateTime(row.updated_at)}</dd></div>
+     <div><dt>Last update</dt><dd>{dateTime(row.updated_at)}</dd></div>
+    <div><dt>Recorded outcome</dt><dd>{readable(row.status)}</dd></div>
     <div><dt>Interview scheduled</dt><dd>{row.interview_scheduled_at ? <time dateTime={row.interview_scheduled_at}>{dateTime(row.interview_scheduled_at)} ({Intl.DateTimeFormat().resolvedOptions().timeZone})</time> : "Not scheduled"}</dd></div>
   </dl></details>;
 }
@@ -74,10 +76,8 @@ function Applications({getToken, campaign, interviews = false, reloadKey}: {getT
   const [search, setSearch] = useState("");
   const [offset, setOffset] = useState(0);
   const loader = useCallback((signal: AbortSignal) => {
-    const query = new URLSearchParams();
-    if (campaign) query.set("campaign", campaign);
-    if (status) query.set("status", status);
-    query.set("limit", "50"); query.set("offset", String(offset));
+    const query = new URLSearchParams(applicationQuery(campaign, interviews ? "" : status, offset));
+    if (interviews && status) query.set("status", status);
     if (interviews && !status) {
       return Promise.all(interviewStatuses.map(stage => {
         const scopedQuery = new URLSearchParams(query); scopedQuery.set("status", stage);
@@ -92,11 +92,11 @@ function Applications({getToken, campaign, interviews = false, reloadKey}: {getT
     {interviews ? <p className="muted">Recruiter contact and interview-stage applications. Recorded interview times are shown in your local timezone ({Intl.DateTimeFormat().resolvedOptions().timeZone}); missing dates are not assumed.</p> : null}
     <div className="record-filters">
       <div className="field"><label htmlFor="application-search">Search company or role on this page</label><input id="application-search" value={search} onChange={event => setSearch(event.target.value)}/></div>
-      <div className="field"><label htmlFor="application-status">{interviews ? "Interview pipeline status" : "Application status"}</label><select id="application-status" value={status} onChange={event => {setStatus(event.target.value); setOffset(0);}}><option value="">{interviews ? "All interview pipeline stages" : "All statuses"}</option>{(interviews ? interviewStatuses : APPLICATION_STATUSES).map(value => <option key={value} value={value}>{readable(value)}</option>)}</select></div>
+      <div className="field"><label htmlFor="application-status">{interviews ? "Interview pipeline status" : "Application status"}</label><select id="application-status" value={status} onChange={event => {setStatus(event.target.value); setOffset(0);}}><option value="">{interviews ? "All interview pipeline stages" : "All applications and history"}</option>{(interviews ? interviewStatuses.map(value => ({ value, label: readable(value) })) : applicationStageOptions).map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select></div>
     </div>
     <ResourceState {...resource}/>
     {resource.data && !rows.length ? <Empty>{interviews ? "No interviews recorded for this selection." : "No applications match this selection."}</Empty> : null}
-    {rows.length ? <div className="table-scroll" tabIndex={0} aria-label="Application records"><table className="records-table"><caption className="sr-only">{interviews ? "Interview-stage applications" : "Your applications"}</caption><thead><tr><th scope="col">Company / role</th><th scope="col">{interviews ? "Interview scheduled" : "Submitted"}</th><th scope="col">Status</th><th scope="col">Details</th></tr></thead><tbody>{rows.map(row => <tr key={row.id}><td><strong>{row.company_name}</strong><span>{row.job_title}</span></td><td>{interviews ? row.interview_scheduled_at ? <time dateTime={row.interview_scheduled_at}>{dateTime(row.interview_scheduled_at)}</time> : "Not scheduled" : dateTime(row.submitted_at)}</td><td><Badge value={row.status}/></td><td><ApplicationDetails row={row}/></td></tr>)}</tbody></table></div> : null}
+    {rows.length ? <div className="table-scroll" tabIndex={0} aria-label="Application records"><table className="records-table"><caption className="sr-only">{interviews ? "Interview-stage applications" : "Your applications"}</caption><thead><tr><th scope="col">Company / role</th><th scope="col">{interviews ? "Interview scheduled" : "Submitted"}</th><th scope="col">Status</th><th scope="col">Details</th></tr></thead><tbody>{rows.map(row => <tr key={row.id}><td><strong>{row.company_name}</strong><span>{row.job_title}</span></td><td>{interviews ? row.interview_scheduled_at ? <time dateTime={row.interview_scheduled_at}>{dateTime(row.interview_scheduled_at)}</time> : "Not scheduled" : dateTime(row.submitted_at)}</td><td><Badge value={applicationStageLabel(row)}/></td><td><ApplicationDetails row={row}/></td></tr>)}</tbody></table></div> : null}
     <button type="button" disabled={resource.loading} className="button button-secondary button-small" onClick={resource.retry}>Refresh records</button>
     <Paging offset={offset} count={resource.data?.length ?? 0} disabled={resource.loading || Boolean(resource.error)} setOffset={setOffset} hasMore={interviews && !status ? interviewStatuses.some(stage => (resource.data ?? []).filter(row => row.status === stage).length === 50) : (resource.data?.length ?? 0) >= 50}/>
   </>;
@@ -113,16 +113,12 @@ function OutreachRecords({getToken, campaign, reloadKey}: {getToken: Token; camp
   const [search, setSearch] = useState("");
   const [offset, setOffset] = useState(0);
   const loader = useCallback((signal: AbortSignal) => {
-    const query = new URLSearchParams();
-    if (campaign) query.set("campaign", campaign);
-    if (status) query.set("status", status);
-    query.set("limit", "50"); query.set("offset", String(offset));
-    return getOutreach(getToken, query.toString(), signal);
+    return getOutreach(getToken, outreachQuery(campaign, status, offset), signal);
   }, [getToken, campaign, status, offset]);
   const resource = useResource(loader, reloadKey);
   const rows = (resource.data ?? []).map(presentOutreachRow).filter(row => `${row.company_name} ${row.contact_name}`.toLowerCase().includes(search.toLowerCase()));
   return <><p className="muted">Outreach is handled manually by HTF. This view shows recorded progress; it does not send messages.</p>
-    <div className="record-filters"><div className="field"><label htmlFor="outreach-search">Search company or contact on this page</label><input id="outreach-search" value={search} onChange={event => setSearch(event.target.value)}/></div><div className="field"><label htmlFor="outreach-status">Outreach status</label><select id="outreach-status" value={status} onChange={event => {setStatus(event.target.value); setOffset(0);}}><option value="">All statuses</option>{OUTREACH_STATUSES.map(value => <option key={value} value={value}>{presentOutreachStatus(value)}</option>)}</select></div></div>
+    <div className="record-filters"><div className="field"><label htmlFor="outreach-search">Search company or contact on this page</label><input id="outreach-search" value={search} onChange={event => setSearch(event.target.value)}/></div><div className="field"><label htmlFor="outreach-status">Outreach status</label><select id="outreach-status" value={status} onChange={event => {setStatus(event.target.value); setOffset(0);}}><option value="">All statuses</option>{OUTREACH_STATUS_OPTIONS.map(({value, label}) => <option key={value} value={value}>{label}</option>)}</select></div></div>
     <ResourceState {...resource}/>
     {resource.data && !rows.length ? <Empty>No outreach matches this selection.</Empty> : null}
     {rows.length ? <div className="table-scroll" tabIndex={0} aria-label="Outreach records"><table className="records-table"><caption className="sr-only">Your outreach</caption><thead><tr><th scope="col">Company / contact</th><th scope="col">Sent</th><th scope="col">Status</th><th scope="col">Details</th></tr></thead><tbody>{rows.map(row => <tr key={row.id}><td><strong>{row.company_name}</strong><span>{row.contact_name}</span></td><td>{dateTime(row.sent_at)}</td><td><Badge value={presentOutreachStatus(row.status)}/></td><td><OutreachDetails row={row}/></td></tr>)}</tbody></table></div> : null}

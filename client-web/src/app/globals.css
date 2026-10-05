@@ -1,26 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --page: #f7f4ed;
-  --surface: #fffdf8;
-  --surface-soft: #f2eee5;
-  --surface-blue: #edf2ee;
-  --ink: #1f2925;
-  --ink-strong: #17201c;
-  --muted: #66706a;
-  --subtle: #87908a;
-  --line: #dfe3dc;
-  --line-strong: #cbd2ca;
-  --accent: #ae3917;
-  --accent-hover: #8f2e13;
-  --accent-soft: #f5e5de;
-  --success: #13795b;
-  --success-soft: #e8f7f0;
-  --warning: #895e0a;
-  --warning-soft: #fff7df;
-  --danger: #b33d45;
-  --danger-soft: #fff0f0;
-  --shadow: 0 20px 55px rgb(34 67 112 / 0.07);
+  --page: #f7f2eb;
+  --surface: #fffaf4;
+  --surface-soft: #f5cbd7;
+  --surface-blue: #f1e65f;
+  --ink: #221b22;
+  --ink-strong: #3a001d;
+  --muted: #796e75;
+  --subtle: #a58d98;
+  --line: #dfd2d8;
+  --line-strong: #c9b5bf;
+  --accent: #ff003c;
+  --accent-hover: #d90032;
+  --accent-soft: #f5cbd7;
+  --success: #237b59;
+  --success-soft: #e4f4ec;
+  --warning: #795e00;
+  --warning-soft: #fffbd5;
+  --danger: #bd2144;
+  --danger-soft: #ffe8ee;
+  --shadow: 0 20px 55px rgb(100 0 40 / 0.10);
   color-scheme: light;
 }
 
@@ -53,7 +53,7 @@ a { color: inherit; text-decoration: none; }
   border-bottom: 1px solid var(--line);
 }
 .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink-strong); font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
-.brand-mark { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; background: var(--accent); color: white; font-size: 16px; font-weight: 800; }
+.brand-mark { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: white; font-size: 11px; font-weight: 800; }
 .topbar-right { display: flex; align-items: center; gap: 24px; }
 .signed-in-nav { display:flex; gap:6px; align-items:center; font-size:13px; font-weight:650; }
 .signed-in-nav a { padding:9px 12px; border-radius:999px; color:var(--muted); }

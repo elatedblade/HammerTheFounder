@@ -7,7 +7,7 @@ import CandidatesPanel from "./candidates-panel";
 import CampaignsPanel from "./campaigns-panel";
 import Dashboard from "./dashboard";
 import ResourcePanel from "./resource-panel";
-import { applications, companies, contacts, inquiries, jobs, notificationTemplates, notifications, outreach, outreachTemplates, payments, suppression } from "./resources";
+import { applications, companies, inquiries, jobs, notificationTemplates, notifications, outreach, payments } from "./resources";
 import ApplicationCreate from "./application-create";
 import { ErrorMessage } from "./ui";
 import { display, isAdmin, type Option, type RecordData, type Resource, type WorkspaceContext } from "./types";
@@ -61,6 +61,6 @@ export default function OperationsWorkspace({ user, api }: { user: CurrentUser; 
         {tab === "Payments" && <ResourcePanel key={campaign} resource={payments} context={context} />}
         {tab === "Inquiries" && <ResourcePanel resource={inquiries} context={context} />}
          {tab === "Notifications" && <ResourceGroup resources={[notifications, notificationTemplates]} context={context} />}
-         {tab === "Outreach" && <ResourceGroup resources={[outreach, contacts, suppression, outreachTemplates]} context={context} />}
+         {tab === "Outreach" && <ResourcePanel resource={outreach} context={context} />}
      </div><footer className="workspace-footer">The API remains the authority for permissions, transitions and delivery status. Saved records do not imply external work is complete.</footer></main>;
 }

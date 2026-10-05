@@ -3,6 +3,9 @@ export type ServicePlan = {
   name: string;
   summary: string;
   features: string[];
+  applicationsPerDay: number;
+  coldMailsPerDay: number;
+  pricePerWeek: number;
 };
 
 /** Public plan copy. Keep identifiers stable: workspace inquiry flow imports this list. */
@@ -10,40 +13,44 @@ export const SERVICE_PLANS: ServicePlan[] = [
   {
     id: "NORMAL_APPLY",
     name: "Normal Apply",
-    summary: "A human-run application search built around the roles you actually want.",
+    summary: "Human-led applications and outreach for your next role.",
+    applicationsPerDay: 10,
+    coldMailsPerDay: 2,
+    pricePerWeek: 349,
     features: [
-      "Role and company targeting from your profile",
-      "Human-reviewed job discovery and applications",
-      "Clear activity and status updates in your dashboard",
+      "Human-reviewed applications and cold mails",
+      "Progress updates in your dashboard",
     ],
   },
   {
     id: "COLD_APPLY",
-    name: "Cold Apply",
-    summary: "A dedicated founder and CXO outreach campaign for a more direct conversation about your next role.",
+    name: "Better Apply",
+    summary: "More applications and outreach, with human follow-through.",
+    applicationsPerDay: 15,
+    coldMailsPerDay: 5,
+    pricePerWeek: 549,
     features: [
-      "Founder and CXO outreach research",
-      "Human-reviewed outreach drafts and follow-up tracking",
-      "Manually recorded messages and replies in your dashboard",
+      "Human-reviewed applications and cold mails",
+      "Reply and follow-up tracking",
     ],
   },
   {
     id: "FULL_THROTTLE",
-    name: "Full-Throttle Sprint",
-    summary: "Managed job applications and founder/CXO outreach, coordinated together around your search direction.",
+    name: "Full Throttle",
+    summary: "Our widest daily coverage for your search.",
+    applicationsPerDay: 25,
+    coldMailsPerDay: 10,
+    pricePerWeek: 749,
     features: [
-      "Applications and founder outreach",
-      "The application and outreach workflows in one campaign",
-      "One place to review progress, replies, and next actions",
+      "Human-reviewed applications and cold mails",
+      "Coordinated progress and follow-up",
     ],
   },
 ];
 
 export const MARKETING_COPY = {
-  eyebrow: "A human-operated job search service",
-  title: "Make your next move easier to find.",
+  eyebrow: "Human-led applications, without the busywork",
+  title: "You go chill. We’ll apply.",
   intro:
-    "Hammer The Founder helps ambitious professionals run a deliberate job search across applications and founder outreach—while real people handle the work and keep you in the loop.",
-  limitations:
-    "We do not promise interviews or offers. Employers decide outcomes; HTF owns the quality and visibility of the search work.",
+    "You bring the direction. We find the fit, tailor the work, and keep watch after send—so your search moves while your time comes back.",
 };

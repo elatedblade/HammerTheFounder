@@ -7,8 +7,8 @@ test("public landing explains services and preserves each chosen plan", async ({
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   const plans = [
     ["Normal Apply", "NORMAL_APPLY"],
-    ["Cold Apply", "COLD_APPLY"],
-    ["Full-Throttle Sprint", "FULL_THROTTLE"],
+    ["Better Apply", "COLD_APPLY"],
+    ["Full Throttle", "FULL_THROTTLE"],
   ];
   for (const [name, id] of plans) {
     await expect(page.getByRole("link", { name: `Choose ${name}`, exact: true }))
@@ -16,7 +16,7 @@ test("public landing explains services and preserves each chosen plan", async ({
   }
   await expect(page.getByLabel("Full name")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Upload resume", exact: true })).toHaveCount(0);
-  await page.getByRole("link", { name: "Choose Cold Apply", exact: true }).click();
+  await page.getByRole("link", { name: "Choose Better Apply", exact: true }).click();
    // The dev server compiles this route on first navigation, including on CI.
    await expect(page).toHaveURL(/\/plans\?plan=COLD_APPLY$/, { timeout: 20000 });
   await expect(page.getByRole("heading", { name: "Connect Clerk to open your workspace" })).toBeVisible();

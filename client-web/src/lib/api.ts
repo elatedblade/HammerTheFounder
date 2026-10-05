@@ -74,10 +74,10 @@ export type ResumeUploadRequest = {
   file_size: number;
 };
 
-export type Dashboard = { applications: Record<string, number>; outreach: Record<string, number>; campaigns: Record<string, number>; tasks: { open: number } };
+export type Dashboard = { applications: Record<string, number | Record<string, number>> & { stage_counts: Record<string, number> }; outreach: Record<string, number | Record<string, number>> & { stage_counts?: Record<string, number> }; campaigns: Record<string, number>; tasks: { open: number } };
 export const APPLICATION_STATUSES = ["SAVED", "READY", "DISCOVERED", "SHORTLISTED", "QUEUED", "IN_PROGRESS", "APPLICATION_FAILED", "SUBMITTED", "IN_REVIEW", "RECRUITER_CONTACTED", "INTERVIEW", "INTERVIEW_SCHEDULED", "OFFER", "REJECTED", "WITHDRAWN"] as const;
 export const OUTREACH_STATUSES = ["DRAFT", "READY", "TARGET_IDENTIFIED", "CONTACT_VERIFIED", "DRAFTED", "REVIEW_REQUIRED", "SENT", "DELIVERED", "REPLIED", "POSITIVE_REPLY", "NEGATIVE_REPLY", "BOUNCED", "CLOSED", "SUPPRESSED"] as const;
-export type Application = { id: string|number; campaign: string; job: string; company_name: string; job_title: string; status: string; submitted_at: string|null; interview_scheduled_at: string|null; created_at: string; updated_at: string };
+export type Application = { id: string|number; campaign: string; job: string; company_name: string; job_title: string; status: string; stage: import("../app/application-stages").ApplicationStage | null; submitted_at: string|null; interview_scheduled_at: string|null; created_at: string; updated_at: string };
 export type Outreach = { id: string|number; campaign: string; company_name: string; contact_name: string; channel: string; status: string; sent_at: string|null; delivered_at: string|null; bounced_at: string|null; reply_at: string|null; follow_up_due_at: string|null; };
 export type CampaignEvent = { id: string|number; event_type: string; summary: string; created_at: string; campaign: string|null };
 export type Notification = { id: string|number; campaign: string|null; channel: string; status: string; subject: string; body: string; created_at: string; sent_at: string|null };

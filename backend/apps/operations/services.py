@@ -6,6 +6,7 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from apps.events.services import record_event
 from apps.users.models import User
+from apps.applications.stages import TRANSITION_ALIASES
 from apps.operations.common import Conflict, require_operator, require_admin, administrator, visible_campaign
 from .selectors import records, MODELS
 
@@ -183,9 +184,11 @@ def write_record(*, user, kind, data, object_id=None):
 
 
 APPLICATION_TRANSITIONS = {
-    "SAVED": {"DISCOVERED", "SHORTLISTED", "READY", "WITHDRAWN"},
-    "DISCOVERED": {"SHORTLISTED", "WITHDRAWN"},
-    "SHORTLISTED": {"QUEUED", "READY", "WITHDRAWN"},
+    # Explicitly recording a confirmed external submission need not replay
+    # preparation states. The submission guards below still apply.
+    "SAVED": {"DISCOVERED", "SHORTLISTED", "READY", "IN_PROGRESS", "SUBMITTED", "WITHDRAWN"},
+    "DISCOVERED": {"SHORTLISTED", "IN_PROGRESS", "SUBMITTED", "WITHDRAWN"},
+    "SHORTLISTED": {"QUEUED", "READY", "IN_PROGRESS", "SUBMITTED", "WITHDRAWN"},
     "QUEUED": {"IN_PROGRESS", "WITHDRAWN"},
     "IN_PROGRESS": {"SUBMITTED", "APPLICATION_FAILED", "WITHDRAWN"},
     "APPLICATION_FAILED": {"QUEUED", "WITHDRAWN"},
@@ -199,10 +202,11 @@ APPLICATION_TRANSITIONS = {
     "REJECTED": set(), "WITHDRAWN": set(),
 }
 OUTREACH_TRANSITIONS = {
-    "DRAFT": {"TARGET_IDENTIFIED", "CONTACT_VERIFIED", "DRAFTED", "REVIEW_REQUIRED", "READY", "CLOSED", "SUPPRESSED"},
-    "TARGET_IDENTIFIED": {"CONTACT_VERIFIED", "CLOSED", "SUPPRESSED"},
-    "CONTACT_VERIFIED": {"DRAFTED", "DRAFT", "CLOSED", "SUPPRESSED"},
-    "DRAFTED": {"REVIEW_REQUIRED", "CLOSED", "SUPPRESSED"},
+    # Recording external outreach need not replay preparation states.
+    "DRAFT": {"TARGET_IDENTIFIED", "CONTACT_VERIFIED", "DRAFTED", "REVIEW_REQUIRED", "READY", "SENT", "CLOSED", "SUPPRESSED"},
+    "TARGET_IDENTIFIED": {"CONTACT_VERIFIED", "SENT", "CLOSED", "SUPPRESSED"},
+    "CONTACT_VERIFIED": {"DRAFTED", "DRAFT", "SENT", "CLOSED", "SUPPRESSED"},
+    "DRAFTED": {"REVIEW_REQUIRED", "SENT", "CLOSED", "SUPPRESSED"},
     "REVIEW_REQUIRED": {"DRAFTED", "READY", "SENT", "CLOSED", "SUPPRESSED"},
     "READY": {"DRAFT", "REVIEW_REQUIRED", "SENT", "CLOSED", "SUPPRESSED"},
     "SENT": {"DELIVERED", "REPLIED", "POSITIVE_REPLY", "NEGATIVE_REPLY", "BOUNCED", "CLOSED", "SUPPRESSED"},
@@ -218,6 +222,8 @@ OUTREACH_TRANSITIONS = {
 @transaction.atomic
 def transition_record(*, user, kind, object_id, status, notes=None, interview_scheduled_at=None):
     require_operator(user)
+    if kind == "applications":
+        status = TRANSITION_ALIASES.get(status, status)
     obj = records(user, kind).filter(pk=object_id).first()
     if obj is None:
         raise Http404
@@ -235,7 +241,9 @@ def transition_record(*, user, kind, object_id, status, notes=None, interview_sc
     if kind == "applications" and status in {"IN_PROGRESS", "SUBMITTED"}:
         from apps.jobs.models import Job
         job = Job.objects.select_for_update().get(pk=obj.job_id)
-        if campaign.status != "ACTIVE" or campaign.plan == "COLD_APPLY" or job.status != "OPEN":
+        # All currently marketed plans include applications. COLD_APPLY is the
+        # stable legacy identifier for Better Apply, not an outreach-only plan.
+        if campaign.status != "ACTIVE" or job.status != "OPEN":
             raise Conflict("Submission requires an active application campaign and an open job.")
         if status == "SUBMITTED":
             obj.submitted_at = obj.submitted_at or timezone.now()
@@ -261,12 +269,14 @@ def transition_record(*, user, kind, object_id, status, notes=None, interview_sc
         if status in {"CONTACT_VERIFIED", "DRAFTED", "REVIEW_REQUIRED", "READY", "SENT"}:
             if contact.email and Suppression.objects.filter(email=contact.email.lower()).exists():
                 raise Conflict("This contact is suppressed.")
-            if (obj.channel == "EMAIL" and not contact.email) or (obj.channel == "LINKEDIN" and not contact.profile_url):
+            if status != "SENT" and ((obj.channel == "EMAIL" and not contact.email) or (obj.channel == "LINKEDIN" and not contact.profile_url)):
                 raise Conflict("A valid channel recipient is required.")
             if status != "CONTACT_VERIFIED" and not obj.body.strip():
-                raise Conflict("Message content and a valid channel recipient are required.")
+                raise Conflict("Message content is required." if status == "SENT" else "Message content and a valid channel recipient are required.")
         if status == "SENT":
-            if campaign.status != "ACTIVE" or campaign.plan == "NORMAL_APPLY":
+            # Record a manually sent message; no outbound dispatch occurs here.
+            # Every plan includes outreach, including Normal Apply cold emails.
+            if campaign.status != "ACTIVE":
                 raise Conflict("Sending requires an active outreach campaign.")
             obj.sent_at = obj.sent_at or timezone.now()
         if status == "DELIVERED":

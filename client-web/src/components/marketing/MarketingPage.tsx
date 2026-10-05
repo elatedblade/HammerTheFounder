@@ -3,10 +3,40 @@ import { MARKETING_COPY, SERVICE_PLANS } from "../../lib/marketing";
 import MarketingNav from "./MarketingNav";
 import styles from "./marketing.module.css";
 
-const fit = [
-  ["You are already good at your work", "Your search deserves the same care as your craft—not a second full-time job."],
-  ["You want a sharper target", "Bring a role, industry, location, or next chapter. We turn your direction into a workable search brief."],
-  ["You value a human signal", "HTF is manual-first. People review the work, record what happened, and surface the next useful action."],
+const searchCards = [
+  {
+    title: "Check the dashboard for updates.",
+    body: "See what we found, what we are applying to, what came back, and what needs your decision.",
+    className: styles.searchCardDashboard,
+  },
+  {
+    title: "Go upskill.",
+    body: "Use the time you would have spent searching to sharpen the skill that moves your next role forward.",
+    className: styles.searchCardUpskill,
+  },
+  {
+    title: "Go relax. Take a nap.",
+    body: "We keep the search moving, monitor replies, and bring you the next useful update.",
+    className: styles.searchCardRelax,
+  },
+];
+
+const processSteps = [
+  ["Align on the brief", "We review your profile, resume, role direction, level, location, industries, preferences, and non-negotiables."],
+  ["Find the right targets", "We show you what is worth pursuing instead of dropping a generic stream of job-board links in your lap."],
+  ["Tailor and apply", "A human reviews the application and adapts the materials to the opportunity. No copy-paste spray."],
+  ["Reach out with intention", "Where the plan includes it, we research founder or CXO contacts and send a considered message."],
+  ["Monitor and follow up", "We check updates, log replies, follow up on live conversations, and call for an update when appropriate and agreed."],
+  ["Keep you aligned", "Your dashboard shows activity, outcomes, conversations, and next actions. You stay in control of the direction."],
+];
+
+const comparisonRows = [
+  ["Role selection", "Broad matching and volume", "Human-reviewed targets worth pursuing"],
+  ["Application", "Generated and sent at scale", "Tailored by a person for the opportunity"],
+  ["Context", "One-size-fits-all prompts", "Your profile, preferences, and non-negotiables"],
+  ["Follow-through", "Little ownership after send", "Replies monitored and next actions logged"],
+  ["Visibility", "Activity can be hard to read", "A dashboard that shows the work and what needs your call"],
+  ["Outcome", "Automation can imply certainty", "Employers decide; HTF owns search quality and visibility"],
 ];
 
 export default function MarketingPage() {
@@ -14,60 +44,99 @@ export default function MarketingPage() {
     <div className={styles.pageShell}>
       <MarketingNav />
       <main>
-        <section className={styles.hero}>
-          <div className={styles.heroCopy}>
-            <p className={styles.kicker}><span className={styles.kickerDot} />{MARKETING_COPY.eyebrow}</p>
-            <h1>{MARKETING_COPY.title}</h1>
-            <p className={styles.heroIntro}>{MARKETING_COPY.intro}</p>
-            <div className={styles.heroActions}>
-              <Link className={styles.primaryButton} href="#plans">Choose your approach <span aria-hidden="true">↗</span></Link>
-              <Link className={styles.textButton} href="#process">See the process <span aria-hidden="true">↓</span></Link>
+        <section className={styles.hero} aria-labelledby="hero-title">
+          <div className={styles.heroInner}>
+            <div className={styles.heroCopy}>
+              <h1 id="hero-title">{MARKETING_COPY.title}</h1>
+              <div className={styles.heroActions}>
+                <Link className={styles.primaryButton} href="#plans">See the plans <span aria-hidden="true">↗</span></Link>
+                <Link className={styles.textButton} href="#process">See what happens <span aria-hidden="true">↓</span></Link>
+              </div>
             </div>
-            <p className={styles.microcopy}>No automated submissions. No hidden promises. Just a managed search with a visible trail.</p>
+
+            <div className={styles.heroStage} role="img" aria-label="A human-led search moving through role fit, applications, and follow-up">
+              <div className={styles.stageRing} aria-hidden="true" />
+              <span className={`${styles.orbitDot} ${styles.orbitDotOne}`} aria-hidden="true" />
+              <span className={`${styles.orbitDot} ${styles.orbitDotTwo}`} aria-hidden="true" />
+              <span className={`${styles.orbitDot} ${styles.orbitDotThree}`} aria-hidden="true" />
+              <div className={styles.signalCore} aria-hidden="true">
+                <strong>SEARCH<br />IN MOTION</strong>
+              </div>
+              <div className={`${styles.orbitCard} ${styles.orbitTarget}`}>
+                <strong>Good match</strong>
+                <small>3 roles ready to review</small>
+              </div>
+              <div className={`${styles.orbitCard} ${styles.orbitSent}`}>
+                <strong>We’re applying</strong>
+                <small>Tailored by a human</small>
+              </div>
+              <div className={`${styles.orbitCard} ${styles.orbitFollow}`}>
+                <strong>Reply checked</strong>
+                <small>Next update is queued</small>
+              </div>
+              <div className={styles.orbitNote}>Your attention is better spent somewhere else.</div>
+            </div>
           </div>
-          <div className={styles.heroCard} aria-label="What HTF coordinates">
-            <div className={styles.cardLabel}>The search, in one view</div>
-            <div className={styles.signalRow}><span className={styles.signalIcon}>01</span><div><strong>Applications</strong><span>Relevant roles, reviewed by people</span></div></div>
-            <div className={styles.signalRow}><span className={styles.signalIcon}>02</span><div><strong>Founder outreach</strong><span>A considered path beyond job boards</span></div></div>
-            <div className={styles.signalRow}><span className={styles.signalIcon}>03</span><div><strong>Progress</strong><span>A dashboard that tells you what is next</span></div></div>
-            <div className={styles.cardNote}>Your profile sets the direction. Our team coordinates the work.</div>
+          <a className={styles.scrollCue} href="#search" aria-label="Scroll into the work"><span aria-hidden="true">↓</span></a>
+        </section>
+
+        <div className={styles.ticker} aria-label="HTF activity ticker">
+          <div className={styles.tickerTrack}>
+            {["Check the dashboard", "Go upskill", "Go relax", "Take a nap", "We’re on it", "Check the dashboard", "Go upskill", "Go relax", "Take a nap", "We’re on it"].map((item, index) => <span className={styles.tickerItem} key={`${item}-${index}`}>{item}</span>)}
+          </div>
+        </div>
+
+        <section className={styles.searchSection} id="search" aria-labelledby="search-title">
+          <div className={styles.searchIntro}>
+            <div>
+              <h2 id="search-title">{MARKETING_COPY.intro}</h2>
+              <Link className={styles.primaryButton} href="#plans">See the plans <span aria-hidden="true">↗</span></Link>
+            </div>
+          </div>
+          <div className={styles.searchCards}>
+            {searchCards.map((card) => <Link className={`${styles.searchCard} ${card.className}`} href="/dashboard" key={card.title}>
+              <h3>{card.title}</h3>
+              <p>{card.body}</p>
+              <span className={styles.cardArrow} aria-hidden="true">↗</span>
+            </Link>)}
           </div>
         </section>
 
-        <section className={styles.statement}>
-          <p className={styles.sectionLabel}>Why HTF</p>
-          <h2>A job search should feel like a considered campaign, not a pile of tabs.</h2>
-          <p>HTF combines thoughtful targeting, hands-on execution, and straightforward updates. You bring the context; we help turn it into consistent momentum.</p>
+        <section className={styles.processSection} id="process" aria-labelledby="process-title">
+          <div className={styles.processLayout}>
+            <div className={styles.processIntro}><h2 id="process-title">Quiet for you. Active for us.</h2><p>We treat your application like our own: specific, reviewed, tracked, and followed through.</p></div>
+            <ol className={styles.processList}>{processSteps.map(([title, body]) => <li key={title}><div><h3>{title}</h3><p>{body}</p></div><span className={styles.stepMark} aria-hidden="true">↗</span></li>)}</ol>
+          </div>
         </section>
 
-        <section className={styles.fitSection}>
-          <div className={styles.sectionHeading}><p className={styles.sectionLabel}>A good fit if</p><h2>You want support without handing over your voice.</h2></div>
-          <div className={styles.fitGrid}>{fit.map(([title, body]) => <article className={styles.fitCard} key={title}><span className={styles.cardIndex}>/</span><h3>{title}</h3><p>{body}</p></article>)}</div>
-        </section>
-
-        <section className={styles.plansSection} id="plans">
-          <div className={styles.sectionHeading}><p className={styles.sectionLabel}>Choose your approach</p><h2>Three ways to put your search in motion.</h2><p>Start with the kind of support you need. We will discuss fit and next steps before any campaign is activated.</p></div>
+        <section className={styles.plansSection} id="plans" aria-labelledby="plans-title">
+          <div className={styles.sectionHeading}><h2 id="plans-title">More coverage. More follow-through.</h2></div>
           <div className={styles.planGrid}>{SERVICE_PLANS.map((plan, index) => <article className={`${styles.planCard} ${index === 1 ? styles.planFeatured : ""}`} key={plan.id}>
-            {index === 1 && <span className={styles.planTag}>Founder &amp; CXO outreach</span>}
-            <div className={styles.planNumber}>0{index + 1}</div><h3>{plan.name}</h3><p className={styles.planSummary}>{plan.summary}</p>
-            <ul>{plan.features.map((feature) => <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>)}</ul>
-             <Link className={index === 1 ? styles.primaryButton : styles.secondaryButton} href={`/plans?plan=${plan.id}`}>Choose {plan.name} <span aria-hidden="true">↗</span></Link>
+           <h3>{plan.name}</h3>
+            <ul className={styles.planDailyCounts}>
+              <li><strong>{plan.applicationsPerDay}</strong> applications per day</li>
+              <li><strong>{plan.coldMailsPerDay}</strong> cold mails per day</li>
+            </ul>
+            <p className={styles.planPrice}><strong>₹{plan.pricePerWeek}</strong> / week</p>
+            <p className={styles.planFreeWeek}>1 week free</p>
+            <Link className={styles.secondaryButton} href={`/plans?plan=${plan.id}`} aria-label={`Choose ${plan.name}`}>Choose plan <span aria-hidden="true">↗</span></Link>
           </article>)}</div>
-          <p className={styles.planFootnote}>Plan details and any commercial terms are discussed directly with HTF. Selecting a plan does not start a campaign.</p>
+          <p className={styles.planFootnote}>Selecting a plan starts an inquiry after sign-in; it does not start or modify a campaign.</p>
         </section>
 
-        <section className={styles.processSection} id="process">
-          <div className={styles.sectionHeading}><p className={styles.sectionLabel}>How it works</p><h2>Clear handoffs. Human decisions.</h2></div>
-          <ol className={styles.processList}><li><span>01</span><div><h3>Choose a starting point</h3><p>Select the approach that matches your search. Sign in or create an account so we can save your intent.</p></div></li><li><span>02</span><div><h3>Talk to HTF on WhatsApp</h3><p>Continue to our business WhatsApp with your chosen plan and inquiry reference. Discuss fit, scope and pricing directly with us.</p></div></li><li><span>03</span><div><h3>Get your profile ready</h3><p>Save your background, preferences and resume on your profile page. HTF reviews the details and starts your campaign after confirmation.</p></div></li><li><span>04</span><div><h3>Follow the progress</h3><p>See applications, outreach and interview updates on your dashboard while our team handles the agreed search work.</p></div></li></ol>
+        <section className={styles.comparisonSection} aria-labelledby="comparison-title">
+          <div className={styles.comparisonHead}><h2 id="comparison-title">We are better than AI.</h2></div>
+          <div className={styles.comparisonTable} role="table" aria-label="Human-led versus AI autopilot comparison">
+            <div className={`${styles.comparisonRow} ${styles.comparisonHeader}`} role="row"><div role="columnheader">The work</div><div role="columnheader">AI autopilot</div><div role="columnheader">HTF human-led</div></div>
+            {comparisonRows.map(([topic, ai, htf]) => <div className={styles.comparisonRow} role="row" key={topic}><div role="rowheader">{topic}</div><div role="cell">{ai}</div><div role="cell">{htf}</div></div>)}
+          </div>
         </section>
 
-        <section className={styles.boundarySection}><div><p className={styles.sectionLabel}>A useful boundary</p><h2>We run the search. Employers make the decision.</h2></div><p>{MARKETING_COPY.limitations} HTF is manual-first: operators submit applications and send outreach themselves. We do not store third-party passwords or pretend that activity equals an outcome.</p></section>
+        <section className={styles.faqSection} id="faq" aria-labelledby="faq-title"><div className={styles.sectionHeading}><h2 id="faq-title">Before you begin.</h2></div><div className={styles.faqList}><details><summary>Does choosing a plan activate a campaign?</summary><p>No. Your selection is saved as an inquiry after you sign in. You discuss fit with HTF; an admin explicitly converts and starts a campaign later.</p></details><details><summary>Will HTF apply everywhere automatically?</summary><p>No. The service is human-operated. Operators review the search and manually submit applications or send outreach according to the agreed direction.</p></details><details><summary>Do I need a finished profile to ask about a plan?</summary><p>No. You can select a plan and start the conversation first. A profile is needed for campaign readiness, not for an inquiry.</p></details><details><summary>What happens when I click Continue to WhatsApp?</summary><p>After you confirm in your account, HTF opens its configured WhatsApp Business conversation with a plan and inquiry reference. It is not proof that a message was sent, payment was made, or work has started.</p></details></div></section>
 
-        <section className={styles.faqSection} id="faq"><div className={styles.sectionHeading}><p className={styles.sectionLabel}>Questions, answered</p><h2>Before you begin.</h2></div><div className={styles.faqList}><details><summary>Does choosing a plan activate a campaign?</summary><p>No. Your selection is saved as an inquiry after you sign in. You discuss fit with HTF; an admin explicitly converts and starts a campaign later.</p></details><details><summary>Will HTF apply everywhere automatically?</summary><p>No. The service is human-operated. Operators review the search and manually submit applications or send outreach according to the agreed direction.</p></details><details><summary>Do I need a finished profile to ask about a plan?</summary><p>No. You can select a plan and start the conversation first. A profile is needed for campaign readiness, not for an inquiry.</p></details><details><summary>What happens when I click Continue to WhatsApp?</summary><p>After you confirm in your account, HTF opens its configured WhatsApp Business conversation with a plan and inquiry reference. It is not proof that a message was sent, payment was made, or work has started.</p></details></div></section>
-
-        <section className={styles.finalCta}><p className={styles.sectionLabel}>Ready when you are</p><h2>Bring your next move into focus.</h2><p>Choose the level of support that feels right, then take the first conversation at your pace.</p><Link className={styles.primaryButton} href="#plans">Explore the plans <span aria-hidden="true">↗</span></Link></section>
+        <section className={styles.finalCta} aria-labelledby="final-title"><h2 id="final-title">Go build, rest, think, or live.</h2><p>Bring us your direction. We will bring the research, applications, outreach, monitoring, and updates.</p><Link className={styles.primaryButton} href="#plans">Find your plan <span aria-hidden="true">↑</span></Link></section>
       </main>
-      <footer className={styles.footer}><Link className={styles.wordmark} href="/"><span className={styles.wordmarkMark}>HTF</span><span>Hammer The Founder</span></Link><p>Human-operated job search support for ambitious professionals.</p><nav aria-label="Footer navigation"><a href="#plans">Plans</a><a href="#process">Process</a><a href="#faq">FAQ</a><Link href="/profile">Profile</Link><Link href="/dashboard">Dashboard</Link></nav><small>© {new Date().getFullYear()} Hammer The Founder. Outcomes remain with employers.</small></footer>
+      <footer className={styles.footer}><Link className={styles.wordmark} href="/"><span className={styles.wordmarkMark}>HTF</span><span>Hammer The Founder</span></Link><p>Your direction stays yours. We handle the follow-through.</p><nav aria-label="Footer navigation"><a href="#plans">Plans</a><a href="#process">Process</a><a href="#faq">FAQ</a><Link href="/profile">Profile</Link><Link href="/dashboard">Dashboard</Link></nav><small>© {new Date().getFullYear()} Hammer The Founder. Outcomes remain with employers.</small></footer>
     </div>
   );
 }

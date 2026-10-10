@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from threading import Lock
 from typing import Any, Protocol
 
 import jwt
@@ -85,6 +86,39 @@ class ClerkJWTVerifier:
             email=_claim_string(claims, "email"),
             phone=_claim_string(claims, "phone_number") or _claim_string(claims, "phone"),
         )
+
+
+_default_verifier: ClerkJWTVerifier | None = None
+_default_verifier_factory: object | None = None
+_default_verifier_lock = Lock()
+
+
+def get_clerk_jwt_verifier(*, factory: type[ClerkJWTVerifier] | None = None) -> ClerkJWTVerifier:
+    """Return the process-local Clerk verifier, creating it lazily once.
+
+    ``PyJWKClient`` keeps its JWKS cache and refreshes it when a token uses an
+    unknown key id, so reusing this verifier preserves normal Clerk key
+    rotation behavior without making a network-backed client per request.
+    The factory parameter keeps the singleton easy to replace in tests.
+    """
+    global _default_verifier, _default_verifier_factory
+
+    verifier_factory = factory or ClerkJWTVerifier
+    if _default_verifier is None or _default_verifier_factory is not verifier_factory:
+        with _default_verifier_lock:
+            if _default_verifier is None or _default_verifier_factory is not verifier_factory:
+                _default_verifier = verifier_factory()
+                _default_verifier_factory = verifier_factory
+    return _default_verifier
+
+
+def reset_clerk_jwt_verifier() -> None:
+    """Clear the cached verifier for test isolation or controlled reconfiguration."""
+    global _default_verifier, _default_verifier_factory
+
+    with _default_verifier_lock:
+        _default_verifier = None
+        _default_verifier_factory = None
 
 
 def _claim_string(claims: dict[str, Any], key: str) -> str:

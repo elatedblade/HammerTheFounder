@@ -1,0 +1,14 @@
+# Railway API service. Select this file as the service's config-as-code file.
+# The API service owns the database migration pre-deploy step. The configs in
+# this directory assume Railway's repository-root build context.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "infra/railway/backend.Dockerfile"
+
+[deploy]
+preDeployCommand = ["python manage.py migrate --noinput"]
+startCommand = "/bin/sh -c 'exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --timeout 60 --access-logfile - --error-logfile -'"
+healthcheckPath = "/ready/"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

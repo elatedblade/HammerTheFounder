@@ -11,7 +11,6 @@ class ApplicationAdmin(admin.ModelAdmin):
         "job",
         "campaign",
         "status",
-        "operator",
         "created_at",
         "updated_at",
     )

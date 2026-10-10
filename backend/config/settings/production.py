@@ -1,6 +1,7 @@
 """Production settings with explicit secret and database requirements."""
 
 import os
+from urllib.parse import urlparse
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -27,6 +28,18 @@ if DATABASES["default"]["ENGINE"] != "django.db.backends.postgresql":
 if len(SECRET_KEY) < 50 or SECRET_KEY.startswith(("django-insecure", "replace-this")):
     raise ImproperlyConfigured("Production requires a strong, unique Django secret of 50+ characters.")
 
+
+def required_cache_url() -> str:
+    """Return a validated production Redis URL without a topology fallback."""
+    cache_url = os.getenv("CACHE_URL", "").strip()
+    if not cache_url:
+        raise ImproperlyConfigured("CACHE_URL must be set in production.")
+
+    parsed = urlparse(cache_url)
+    if parsed.scheme not in {"redis", "rediss"} or not parsed.hostname:
+        raise ImproperlyConfigured("CACHE_URL must be a valid redis:// or rediss:// URL.")
+    return cache_url
+
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
@@ -38,7 +51,8 @@ SECURE_REFERRER_POLICY = "same-origin"
 
 # Shared Redis-backed request counters across Gunicorn workers. Complement these
 # soft DRF limits with hard rate/body limits on the trusted TLS reverse proxy.
-CACHES = {"default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": os.getenv("CACHE_URL", "redis://redis:6379/1")}}
+CACHE_URL = required_cache_url()
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": CACHE_URL}}
 REST_FRAMEWORK = {
     **REST_FRAMEWORK,
     "DEFAULT_THROTTLE_CLASSES": [

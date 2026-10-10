@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, version-one-official]
   pull_request:
 
 jobs:
@@ -37,8 +37,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install --upgrade pip
-      - run: pip install -e '.[dev]'
+      - name: Install locked backend dependencies
+        run: python -m pip install --require-hashes -r requirements-dev.lock
       - name: Wait for PostgreSQL
         run: |
           python - <<'PY'
@@ -58,6 +58,15 @@ jobs:
       - run: python -m pytest -q
       - run: python manage.py check
       - run: python manage.py makemigrations --check --dry-run
+      - name: Check production configuration
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.production
+          DJANGO_SECRET_KEY: ci-only-NotAProductionSecret-7f1d9b3a2c8e6f4a1b0d9e7c5a3f8b2d
+          DJANGO_ALLOWED_HOSTS: api.example.test,healthcheck.railway.app
+          DATABASE_URL: postgresql://htf:htf@localhost:5432/htf
+          CACHE_URL: redis://localhost:6379/1
+          CSRF_TRUSTED_ORIGINS: https://customer.example.test,https://admin.example.test
+        run: python manage.py check --deploy --fail-level WARNING
 
   frontend:
     runs-on: ubuntu-latest

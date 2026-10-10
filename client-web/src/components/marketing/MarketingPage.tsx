@@ -47,14 +47,11 @@ export default function MarketingPage() {
         <section className={styles.hero} aria-labelledby="hero-title">
           <div className={styles.heroInner}>
             <div className={styles.heroCopy}>
-              <p className={styles.kicker}>{MARKETING_COPY.eyebrow}</p>
               <h1 id="hero-title">{MARKETING_COPY.title}</h1>
-              <p className={styles.heroIntro}>{MARKETING_COPY.intro}</p>
               <div className={styles.heroActions}>
                 <Link className={styles.primaryButton} href="#plans">See the plans <span aria-hidden="true">↗</span></Link>
                 <Link className={styles.textButton} href="#process">See what happens <span aria-hidden="true">↓</span></Link>
               </div>
-              <p className={styles.microcopy}>Not a blind blast or an AI autopilot. A monitored search with a human in the loop.</p>
             </div>
 
             <div className={styles.heroStage} role="img" aria-label="A human-led search moving through role fit, applications, and follow-up">
@@ -105,51 +102,6 @@ export default function MarketingPage() {
           </div>
         </section>
 
-        <section className={styles.dashboardSection} aria-labelledby="dashboard-preview-title">
-          <div className={styles.dashboardHead}>
-            <div>
-              <p className={styles.sectionLabel}>Stay informed, not occupied</p>
-              <h2 id="dashboard-preview-title">A live search you can actually see.</h2>
-            </div>
-            <p>Your dashboard is where your direction, our work, and the next action meet.</p>
-          </div>
-          <div className={styles.dashboardWindow}>
-            <div className={styles.windowBar}>
-              <span>HTF / YOUR SEARCH</span>
-              <span className={styles.windowDots} aria-hidden="true"><i /><i /><i /></span>
-            </div>
-            <div className={styles.dashboardBody}>
-              <aside className={styles.dashboardSide} aria-labelledby="dashboard-visibility-title">
-                <h3 id="dashboard-visibility-title">Search visibility</h3>
-                <p>One place to keep your direction, the work in motion, and the decisions that need you aligned.</p>
-                <ul className={styles.dashboardSignals}>
-                  <li><strong>Your brief</strong><span>Roles, preferences, and non-negotiables</span></li>
-                  <li><strong>Human review</strong><span>Targets and materials checked for fit</span></li>
-                  <li><strong>Follow-through</strong><span>Replies and next actions kept visible</span></li>
-                </ul>
-              </aside>
-              <div className={styles.dashboardFeed}>
-                <h3>What stays visible</h3>
-                <ul className={styles.feedList}>
-                  <li className={styles.feedRow}>
-                    <i aria-hidden="true" />
-                    <div><strong>Roles worth reviewing</strong><span>See the opportunities selected against your brief.</span></div>
-                  </li>
-                  <li className={styles.feedRow}>
-                    <i aria-hidden="true" />
-                    <div><strong>Applications tailored to the opportunity</strong><span>Know what was prepared and sent by a human.</span></div>
-                  </li>
-                  <li className={styles.feedRow}>
-                    <i aria-hidden="true" />
-                    <div><strong>Replies and follow-ups</strong><span>Keep conversations and the next useful action together.</span></div>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <p className={styles.dashboardCta}><Link className={styles.primaryButton} href="/dashboard">Open your dashboard <span aria-hidden="true">↗</span></Link></p>
-        </section>
-
         <section className={styles.processSection} id="process" aria-labelledby="process-title">
           <div className={styles.processLayout}>
             <div className={styles.processIntro}><h2 id="process-title">Quiet for you. Active for us.</h2><p>We treat your application like our own: specific, reviewed, tracked, and followed through.</p></div>
@@ -161,15 +113,12 @@ export default function MarketingPage() {
           <div className={styles.sectionHeading}><h2 id="plans-title">More coverage. More follow-through.</h2></div>
           <div className={styles.planGrid}>{SERVICE_PLANS.map((plan, index) => <article className={`${styles.planCard} ${index === 1 ? styles.planFeatured : ""}`} key={plan.id}>
            <h3>{plan.name}</h3>
-            <p className={styles.planSummary}>{plan.summary}</p>
             <ul className={styles.planDailyCounts}>
               <li><strong>{plan.applicationsPerDay}</strong> applications per day</li>
               <li><strong>{plan.coldMailsPerDay}</strong> cold mails per day</li>
             </ul>
-            <ul className={styles.planFeatures} aria-label={`${plan.name} includes`}>
-              {plan.features.map((feature) => <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>)}
-            </ul>
             <p className={styles.planPrice}><strong>₹{plan.pricePerWeek}</strong> / week</p>
+            <p className={styles.planFreeWeek}>1 week free</p>
             <Link className={styles.secondaryButton} href={`/plans?plan=${plan.id}`} aria-label={`Choose ${plan.name}`}>Choose plan <span aria-hidden="true">↗</span></Link>
           </article>)}</div>
           <p className={styles.planFootnote}>Selecting a plan starts an inquiry after sign-in; it does not start or modify a campaign.</p>
@@ -180,16 +129,6 @@ export default function MarketingPage() {
           <div className={styles.comparisonTable} role="table" aria-label="Human-led versus AI autopilot comparison">
             <div className={`${styles.comparisonRow} ${styles.comparisonHeader}`} role="row"><div role="columnheader">The work</div><div role="columnheader">AI autopilot</div><div role="columnheader">HTF human-led</div></div>
             {comparisonRows.map(([topic, ai, htf]) => <div className={styles.comparisonRow} role="row" key={topic}><div role="rowheader">{topic}</div><div role="cell">{ai}</div><div role="cell">{htf}</div></div>)}
-          </div>
-        </section>
-
-        <section className={styles.promiseSection} aria-labelledby="promise-title">
-          <div className={styles.promiseInner}>
-            <div>
-              <p className={styles.sectionLabel}>The promise</p>
-              <h2 id="promise-title">Get your time back without handing over your voice.</h2>
-            </div>
-            <p>We own the quality, fit, visibility, and follow-through of the search work. Employers own the outcome. That boundary keeps the promise honest.</p>
           </div>
         </section>
 

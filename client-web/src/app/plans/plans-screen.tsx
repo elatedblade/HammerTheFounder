@@ -23,6 +23,7 @@ export function AvailablePlanCards({ selected, onSelect }: { selected: ServicePl
         <li><strong>{plan.coldMailsPerDay}</strong> cold mails per day</li>
       </ul>
       <p className={styles.planPrice}><strong>₹{plan.pricePerWeek}</strong> / week</p>
+      <p className={styles.planFreeWeek}>1 week free</p>
       <button type="button" className={styles.selectButton} onClick={() => onSelect(plan.id)} aria-label={`Select ${plan.name}`} aria-pressed={isSelected}>{isSelected ? <><span aria-hidden="true">✓ </span>Selected</> : "Select plan"}</button>
     </article>;
   })}</div>;

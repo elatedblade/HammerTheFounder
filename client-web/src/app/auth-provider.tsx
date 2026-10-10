@@ -2,11 +2,10 @@
 
 import type { ReactNode } from "react";
 import { ClerkProvider } from "@clerk/nextjs";
+import { clerkConfigured } from "../lib/auth-config";
 
 const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-const authMode = process.env.NEXT_PUBLIC_AUTH_MODE ?? (publishableKey ? "clerk" : "unconfigured");
-
-const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+export { clerkConfigured };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   if (!clerkConfigured) {

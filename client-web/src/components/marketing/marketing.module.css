@@ -114,6 +114,10 @@
 .dashboardSide { padding: 28px; border-right: 1px solid var(--line); }
 .dashboardSide h3, .dashboardFeed h3 { margin: 0 0 22px; color: var(--plum); font-size: 24px; }
 .dashboardSide > p { color: var(--muted); font-size: 13px; }
+.dashboardSignals { display: grid; gap: 17px; margin: 24px 0 0; padding: 20px 0 0; border-top: 1px solid var(--line); list-style: none; }
+.dashboardSignals li { display: grid; gap: 4px; }
+.dashboardSignals strong { color: var(--plum); font-size: 13px; }
+.dashboardSignals span { color: var(--muted); font-size: 11px; line-height: 1.45; }
 .progressBar { height: 7px; margin: 23px 0; background: var(--line); }
 .progressBar span { display: block; width: 68%; height: 100%; background: var(--red); }
 .dashboardStats { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
@@ -123,6 +127,7 @@
 .stat span { margin-top: 4px; color: var(--muted); font-size: 10px; }
 .dashboardFeed { padding: 28px; }
 .feedRow { display: grid; grid-template-columns: 10px 1fr auto; gap: 11px; align-items: start; padding: 14px 0; border-top: 1px solid var(--line); }
+.feedList { margin: 0; padding: 0; list-style: none; }
 .feedRow i { width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: var(--red); }
 .feedRow strong, .feedRow span { display: block; }
 .feedRow strong { color: var(--plum); font-size: 13px; }
@@ -161,7 +166,6 @@
 .planFeatures li span { margin-right: 8px; color: var(--yellow); }
 .planPrice { margin: 20px 0 8px; font-size: 14px; }
 .planPrice strong { font-size: 30px; }
-.planFreeWeek { margin: 0 0 auto; color: var(--yellow); font-size: 14px; font-weight: 850; }
 .planCard .primaryButton, .planCard .secondaryButton { margin-top: 21px; }
 .plansSection .secondaryButton { border-color: #fff; background: #fff; color: var(--plum); }
 .planFootnote { margin: 24px 0 0; color: rgb(247 242 235 / .58); font-size: 11px; }
@@ -174,6 +178,11 @@
 .comparisonRow > div:first-child, .comparisonRow > div:nth-child(3) { color: var(--plum); font-weight: 750; }
 .comparisonHeader { color: var(--muted); font-size: 10px; font-weight: 850; letter-spacing: .15em; text-transform: uppercase; }
 .comparisonHeader > div { color: inherit !important; font-size: inherit; font-weight: inherit; }
+
+.promiseSection { padding: 115px max(32px, calc((100% - 1240px) / 2)) 125px; background: var(--yellow); }
+.promiseInner { display: grid; grid-template-columns: 1fr 1fr; gap: 90px; align-items: end; }
+.promiseInner h2 { max-width: 700px; margin: 14px 0 0; color: var(--plum); }
+.promiseInner > p { max-width: 390px; margin: 0; color: var(--plum); font-size: 16px; line-height: 1.55; }
 
 .faqSection { display: grid; grid-template-columns: .7fr 1.3fr; gap: 80px; padding-top: 122px; padding-bottom: 125px; }
 .faqSection h2 { color: var(--plum); }
@@ -207,7 +216,7 @@
   .heroInner { grid-template-columns: 1fr; }
   .hero { min-height: 0; }
   .heroStage { min-height: 600px; }
-  .searchIntro, .processLayout, .comparisonHead, .faqSection { grid-template-columns: 1fr; gap: 35px; }
+  .searchIntro, .processLayout, .comparisonHead, .faqSection, .promiseInner { grid-template-columns: 1fr; gap: 35px; }
   .searchCards { grid-template-columns: repeat(2, 1fr); }
   .searchCard:last-child { grid-column: 1 / -1; }
   .dashboardBody { grid-template-columns: 1fr; }
@@ -238,7 +247,7 @@
   .searchCards { grid-template-columns: 1fr; }
   .searchCard:last-child { grid-column: auto; }
   .searchCard { min-height: 260px; }
-  .dashboardSection, .plansSection { padding-top: 80px; padding-bottom: 90px; }
+  .dashboardSection, .plansSection, .promiseSection { padding-top: 80px; padding-bottom: 90px; }
   .dashboardSection { padding-left: 20px; padding-right: 20px; }
   .dashboardHead { display: block; }
   .dashboardHead > p { margin-top: 20px; }

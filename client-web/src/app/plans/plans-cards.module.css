@@ -54,7 +54,6 @@
 .planDailyCounts strong { font-size: 24px; font-weight: 850; }
 .planPrice { margin: 24px 0 8px; font-size: 14px; line-height: 1.2; }
 .planPrice strong { font-size: 36px; font-weight: 900; letter-spacing: -.05em; }
-.planFreeWeek { margin: 0 0 auto; color: #f1e65f; font-size: 14px; font-weight: 850; }
 
 .selectButton {
   display: inline-flex;

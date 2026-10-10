@@ -5,6 +5,10 @@ test("public landing explains services and preserves each chosen plan", async ({
   await request.get("/plans");
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "A live search you can actually see." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Get your time back without handing over your voice." })).toBeVisible();
+  await expect(page.getByText(/Progress updates in your dashboard/)).toBeVisible();
+  await expect(page.getByText("1 week free", { exact: true })).toHaveCount(0);
   const plans = [
     ["Normal Apply", "NORMAL_APPLY"],
     ["Better Apply", "COLD_APPLY"],

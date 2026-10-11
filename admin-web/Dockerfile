@@ -1,4 +1,4 @@
-FROM node:22-alpine AS development
+FROM node:25-alpine AS development
 
 WORKDIR /app
 
@@ -23,7 +23,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
     NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
 RUN npm run build
 
-FROM node:22-alpine AS production
+FROM node:25-alpine AS production
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
 COPY --from=builder --chown=node:node /app/.next/standalone ./

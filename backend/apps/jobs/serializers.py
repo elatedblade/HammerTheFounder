@@ -34,38 +34,7 @@ class JobSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "first_seen_at", "last_seen_at")
         validators = []
 
-    def validate(self, attrs):
-        source = attrs.get("external_source")
-        external_id = attrs.get("external_id")
-        if source is not None and external_id is not None:
-            queryset = Job.objects.filter(
-                external_source=source, external_id=external_id
-            )
-            if self.instance is not None:
-                queryset = queryset.exclude(pk=self.instance.pk)
-            if queryset.exists():
-                raise serializers.ValidationError(
-                    {"external_id": "A job with this source and ID already exists."}
-                )
-
-        metadata = attrs.get("metadata_json")
-        if metadata is not None and not isinstance(metadata, dict):
-            raise serializers.ValidationError({"metadata": "Expected an object."})
-        return attrs
-
     def to_internal_value(self, data):
-        source = str(data.get("external_source", "")).strip().casefold()
-        external_id = str(data.get("external_id", "")).strip()
-        if source and external_id:
-            queryset = Job.objects.filter(
-                external_source=source, external_id=external_id
-            )
-            if self.instance is not None:
-                queryset = queryset.exclude(pk=self.instance.pk)
-            if queryset.exists():
-                raise serializers.ValidationError(
-                    {"external_id": "A job with this source and ID already exists."}
-                )
         allowed = set(self.fields)
         immutable = set(self.Meta.read_only_fields)
         errors = {}
@@ -97,3 +66,22 @@ class JobSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError("This field may not be blank.")
         return value
+
+    def validate(self, attrs):
+        source = attrs.get("external_source")
+        external_id = attrs.get("external_id")
+        if source is not None and external_id is not None:
+            queryset = Job.objects.filter(
+                external_source=source, external_id=external_id
+            )
+            if self.instance is not None:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            if queryset.exists():
+                raise serializers.ValidationError(
+                    {"external_id": "A job with this source and ID already exists."}
+                )
+
+        metadata = attrs.get("metadata_json")
+        if metadata is not None and not isinstance(metadata, dict):
+            raise serializers.ValidationError({"metadata": "Expected an object."})
+        return attrs

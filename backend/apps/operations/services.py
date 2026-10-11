@@ -132,7 +132,7 @@ def _write(*, user, kind, data, object_id=None):
                 job = Job.objects.select_for_update().get(pk=instance.job_id if instance else values["job"].pk)
                 if not instance:
                     values["job"] = job
-            if kind == "applications" and not instance and values["job"].status not in {"OPEN", "ACTIVE"}:
+            if kind == "applications" and not instance and values["job"].status != "OPEN":
                 raise Conflict("Applications can only be saved for open jobs.")
             if kind == "outreach":
                 if instance and instance.status not in {"DRAFT", "READY", "TARGET_IDENTIFIED", "CONTACT_VERIFIED", "DRAFTED", "REVIEW_REQUIRED"} and {"subject", "body"}.intersection(values):
@@ -243,7 +243,7 @@ def transition_record(*, user, kind, object_id, status, notes=None, interview_sc
         job = Job.objects.select_for_update().get(pk=obj.job_id)
         # All currently marketed plans include applications. COLD_APPLY is the
         # stable legacy identifier for Better Apply, not an outreach-only plan.
-        if campaign.status != "ACTIVE" or job.status not in {"OPEN", "ACTIVE"}:
+        if campaign.status != "ACTIVE" or job.status != "OPEN":
             raise Conflict("Submission requires an active application campaign and an open job.")
         if status == "SUBMITTED":
             obj.submitted_at = obj.submitted_at or timezone.now()

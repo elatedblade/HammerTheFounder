@@ -70,7 +70,7 @@ def change_application_stage(*, user, object_id, stage, submission_confirmed=Fal
         raise Conflict("Confirm that this application was submitted before moving to Under review, Interviews, or Offers.")
     if needs_submission or (current == "SAVED" and stage == "IN_PROGRESS"):
         job = Job.objects.select_for_update().get(pk=obj.job_id)
-        if campaign.status != "ACTIVE" or job.status not in {"OPEN", "ACTIVE"}:
+        if campaign.status != "ACTIVE" or job.status != "OPEN":
             raise Conflict("Starting progress or confirming submission requires an active campaign and an open job.")
     before = state_identifiers(obj)
     previous = obj.status

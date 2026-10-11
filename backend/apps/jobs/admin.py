@@ -11,7 +11,7 @@ class JobAdmin(admin.ModelAdmin):
         "external_source",
         "external_id",
         "status",
-        "last_seen_at",
+        "updated_at",
     )
     list_filter = ("status", "external_source", "employment_type")
     search_fields = (
@@ -19,6 +19,6 @@ class JobAdmin(admin.ModelAdmin):
         "company__name",
         "external_id",
         "canonical_url",
-        "fingerprint",
+        "identity_key",
     )
-    readonly_fields = ("id", "first_seen_at", "last_seen_at")
+    readonly_fields = ("id", "identity_key", "created_at", "updated_at")

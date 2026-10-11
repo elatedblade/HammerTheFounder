@@ -7,7 +7,7 @@ from rest_framework.exceptions import AuthenticationFailed
 
 from apps.users.services import sync_external_identity
 
-from .verifiers import ClerkJWTVerifier, TokenVerifier
+from .verifiers import ClerkJWTVerifier, TokenVerifier, get_clerk_jwt_verifier
 
 
 class ClerkBearerAuthentication(BaseAuthentication):
@@ -30,7 +30,7 @@ class ClerkBearerAuthentication(BaseAuthentication):
             raise AuthenticationFailed("Bearer token is missing.")
 
         try:
-            verifier = self.verifier or ClerkJWTVerifier()
+            verifier = self.verifier or get_clerk_jwt_verifier(factory=ClerkJWTVerifier)
             identity = verifier.verify(token)
         except Exception as exc:
             # Do not leak key, issuer, or JWT parsing details to clients.

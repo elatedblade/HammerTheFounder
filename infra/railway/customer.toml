@@ -1,0 +1,11 @@
+# Railway customer web service using the repository-root build context.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "infra/railway/customer.Dockerfile"
+
+[deploy]
+startCommand = "exec sh -c 'HOSTNAME=0.0.0.0 PORT=${PORT:-3000} node server.js'"
+healthcheckPath = "/"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

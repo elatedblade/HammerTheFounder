@@ -143,6 +143,21 @@ Create a private `.env.production` from the environment template and supply:
   forwarded-protocol headers and sets `X-Forwarded-Proto` itself.
 - `HTF_ENVIRONMENT=production`, optional release ID and Sentry DSNs.
 
+For Railway, create separate services for the API, Celery worker, customer web,
+and admin web. Use the matching files under `infra/railway/` as the service
+configuration. The API service runs the migration pre-deploy command and uses
+`/ready/` as its deployment health check; `/health/` remains a dependency-light
+liveness endpoint. The worker has no public HTTP endpoint. Set
+`DJANGO_SETTINGS_MODULE=config.settings.production` on both API and worker, and
+set `CACHE_URL` explicitly on the API and worker using the Railway Redis
+connection URL (with a separate logical database from the Celery broker when
+supported).
+
+The Railway TOML files are legacy Config-as-Code files and Railway has announced
+their deprecation after 2026-12-01. They are retained as reproducible service
+defaults for the current launch; migrate them to Railway Infrastructure as Code
+before that deadline.
+
 Public Next variables are compiled at build time; rebuild after changing them.
 Never place private backend credentials in a `NEXT_PUBLIC_*` variable.
 
@@ -160,6 +175,11 @@ encrypted backups and deployment rollback. Validate CSP against the actual Clerk
 and asset origins before enforcing it; do not copy a permissive wildcard CSP.
 The backend has shared Redis-backed soft rate limits and no-store API responses.
 These are not a replacement for edge abuse protection or a security assessment.
+
+`/ready/` checks PostgreSQL and the configured cache/Redis connection and returns
+503 with only safe check names when either dependency is unavailable. It is for
+deployment readiness, not continuous uptime monitoring. Configure an external
+uptime monitor separately if continuous monitoring is required.
 
 Sentry is opt-in: backend/worker and browser runtime errors are scrubbed of request
 bodies, user context, breadcrumbs and error messages. Local variables, replay and
@@ -223,3 +243,23 @@ off-host audit retention.
 - Trial expiry, worker interruption and a database backup restore are rehearsed.
 - Dependency/security review, privacy/retention policy, and appropriate malware
   scanning controls are agreed before accepting production candidate documents.
+
+## Production dependency and privacy gates
+
+Backend runtime and development dependencies are pinned with hashes in
+`backend/requirements.lock` and `backend/requirements-dev.lock`. Frontend
+dependencies use their committed npm lockfiles. GitHub Actions runs tests,
+production Django checks, npm auditing, and `pip-audit`; audit findings remain
+visible as warnings until an owner reviews and resolves them.
+
+At the time of this release review, the scanner reports a known advisory for the
+pinned `pydantic-ai-slim==1.0.18` and a frontend `braces` advisory in the
+development lint dependency chain. Do not use a forced dependency upgrade in
+production. Upgrade each dependency in a separate tested change, or document
+why the affected code path is not reachable in the deployed runtime.
+
+Before accepting real candidate documents, the owner must publish and approve a
+privacy notice, retention/deletion schedule, customer service/refund terms,
+operator access policy, and an incident-response contact. This repository does
+not claim that legal approval exists merely because technical storage and audit
+controls are implemented.

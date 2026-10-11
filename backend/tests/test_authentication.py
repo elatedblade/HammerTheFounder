@@ -10,7 +10,12 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.test import APIClient
 
 from apps.integrations.auth.authentication import ClerkBearerAuthentication
-from apps.integrations.auth.verifiers import ClerkJWTVerifier, VerifiedIdentity
+from apps.integrations.auth.verifiers import (
+    ClerkJWTVerifier,
+    VerifiedIdentity,
+    get_clerk_jwt_verifier,
+    reset_clerk_jwt_verifier,
+)
 from apps.users.models import User
 
 
@@ -50,6 +55,30 @@ def test_invalid_verified_token_is_rejected():
         ClerkBearerAuthentication(verifier=FakeVerifier(error=ValueError())).authenticate(
             bearer_request("invalid")
         )
+
+
+def test_default_clerk_verifier_is_reused_and_resettable(monkeypatch):
+    instances = []
+
+    class FakeClerkVerifier:
+        def __init__(self):
+            instances.append(self)
+
+    monkeypatch.setattr(
+        "apps.integrations.auth.verifiers.ClerkJWTVerifier",
+        FakeClerkVerifier,
+    )
+    reset_clerk_jwt_verifier()
+
+    first = get_clerk_jwt_verifier()
+    second = get_clerk_jwt_verifier()
+
+    assert first is second
+    assert instances == [first]
+
+    reset_clerk_jwt_verifier()
+    assert get_clerk_jwt_verifier() is not first
+    reset_clerk_jwt_verifier()
 
 
 @pytest.mark.django_db

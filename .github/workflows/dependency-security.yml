@@ -1,0 +1,74 @@
+name: Dependency security
+
+on:
+  push:
+    branches: [main, version-one-official]
+  pull_request:
+  schedule:
+    - cron: "17 3 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  python-audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.lock
+      - name: Install locked dependencies
+        run: python -m pip install --require-hashes -r requirements-dev.lock
+      - name: Install pinned audit tool
+        run: python -m pip install pip-audit==2.9.0
+      - name: Audit locked dependencies
+        id: pip-audit
+        continue-on-error: true
+        run: pip-audit -r requirements.lock --format json --output pip-audit.json
+      - name: Upload Python audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-dependency-audit
+          path: backend/pip-audit.json
+          if-no-files-found: warn
+      - name: Surface audit status
+        if: steps.pip-audit.outcome == 'failure'
+        run: echo "::warning::pip-audit found a known vulnerability; review pip-audit.json before deployment."
+
+  npm-audit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [client-web, admin-web]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - run: npm ci --ignore-scripts
+      - name: Audit npm dependencies
+        id: npm-audit
+        continue-on-error: true
+        run: npm audit --audit-level=high --json > npm-audit.json
+      - name: Upload npm audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-dependency-audit-${{ matrix.app }}
+          path: ${{ matrix.app }}/npm-audit.json
+          if-no-files-found: warn
+      - name: Surface audit status
+        if: steps.npm-audit.outcome == 'failure'
+        run: echo "::warning::npm audit found high-severity vulnerabilities; review npm-audit.json without applying an unsafe forced upgrade."

@@ -39,20 +39,31 @@ class ResumeStorage(Protocol):
 
 
 class S3ResumeStorage:
-    def __init__(self, *, region, bucket, access_key_id, secret_access_key):
+    def __init__(self, *, region, bucket, access_key_id=None, secret_access_key=None):
         # The factory rejects incomplete configuration before constructing a client.
         # Explicit credentials prevent implicit metadata-server credential discovery.
         import boto3
         from botocore.config import Config
 
         self.bucket = bucket
-        self.client = boto3.client(
-            "s3",
-            region_name=region,
-            aws_access_key_id=access_key_id,
-            aws_secret_access_key=secret_access_key,
-            config=Config(signature_version="s3v4", connect_timeout=5, read_timeout=15, retries={"max_attempts": 2, "mode": "standard"}),
-        )
+        client_kwargs = {
+            "region_name": region,
+            "config": Config(
+                signature_version="s3v4",
+                connect_timeout=5,
+                read_timeout=15,
+                retries={"max_attempts": 2, "mode": "standard"},
+            ),
+        }
+        # Empty credentials deliberately use the runtime's default credential
+        # chain (the EC2 instance role in deployment). Static credentials remain
+        # supported for local development and explicit non-EC2 environments.
+        if access_key_id and secret_access_key:
+            client_kwargs.update(
+                aws_access_key_id=access_key_id,
+                aws_secret_access_key=secret_access_key,
+            )
+        self.client = boto3.client("s3", **client_kwargs)
 
     def authorize_upload(
         self, *, key: str, content_type: str, file_size: int, expires_in: int
@@ -144,7 +155,10 @@ def get_resume_storage() -> ResumeStorage:
         "access_key_id": settings.AWS_ACCESS_KEY_ID,
         "secret_access_key": settings.AWS_SECRET_ACCESS_KEY,
     }
-    if any(not isinstance(value, str) or not value.strip() for value in config.values()):
+    if any(
+        not isinstance(config[key], str) or not config[key].strip()
+        for key in ("region", "bucket")
+    ):
         raise StorageNotConfigured()
     from botocore.exceptions import BotoCoreError, ClientError
 

@@ -15,9 +15,24 @@ if len(SECRET_KEY) < 50 or SECRET_KEY.startswith(("django-insecure", "replace-th
     raise ImproperlyConfigured("Evaluation requires a unique secret of at least 50 characters.")
 if DATABASES["default"]["ENGINE"] != "django.db.backends.postgresql":
     raise ImproperlyConfigured("Evaluation requires PostgreSQL DATABASE_URL.")
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]"]
-CORS_ALLOWED_ORIGINS = ["http://localhost:3000", "http://localhost:3001"]
-CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]").split(",")
+    if host.strip()
+]
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:3000,http://localhost:3001",
+    ).split(",")
+    if origin.strip()
+]
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CSRF_TRUSTED_ORIGINS", ",".join(CORS_ALLOWED_ORIGINS)).split(",")
+    if origin.strip()
+]
 SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False

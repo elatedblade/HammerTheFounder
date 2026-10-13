@@ -42,3 +42,18 @@ class IsAdmin(BasePermission):
             and user.is_active
             and user.role in {User.Role.ADMIN, User.Role.SUPERADMIN}
         )
+
+
+class IsSuperAdmin(BasePermission):
+    """Allow platform-wide user administration to active superadmins only."""
+
+    message = "A superadmin role is required."
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user
+            and user.is_authenticated
+            and user.is_active
+            and user.role == User.Role.SUPERADMIN
+        )

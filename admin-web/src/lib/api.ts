@@ -6,6 +6,14 @@ export type CurrentUser = {
   identity_provider: string;
 };
 
+export type ManagedUser = {
+  id: number;
+  email: string;
+  clerk_subject: string;
+  role: CurrentUser["role"];
+  status: "ACTIVE" | "INACTIVE";
+};
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export async function getCurrentUser(

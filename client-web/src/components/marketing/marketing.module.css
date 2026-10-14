@@ -206,6 +206,15 @@
 @media (max-width: 960px) {
   .heroInner { grid-template-columns: 1fr; }
   .hero { min-height: 0; }
+  /* Cover phone landscape too; system font metrics need room to wrap and scale. */
+  .hero h1 {
+    max-width: min(100%, 650px);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: clamp(2.75rem, calc(1.5rem + 8vw), 5.5rem);
+    line-height: 1.08;
+    letter-spacing: normal;
+    overflow-wrap: anywhere;
+  }
   .heroStage { min-height: 600px; }
   .searchIntro, .processLayout, .comparisonHead, .faqSection { grid-template-columns: 1fr; gap: 35px; }
   .searchCards { grid-template-columns: repeat(2, 1fr); }
@@ -225,7 +234,6 @@
   .mobileMenu summary::-webkit-details-marker { display: none; }
   .mobileLinks { position: absolute; top: 43px; right: 0; min-width: 185px; display: grid; gap: 18px; padding: 18px; background: var(--plumDeep); border: 1px solid rgb(247 242 235 / .3); border-radius: 6px; box-shadow: 0 10px 25px rgb(34 27 34 / .2); }
   .hero { padding-top: 62px; padding-bottom: 75px; }
-  .hero h1 { font-size: clamp(4rem, 20vw, 6rem); }
   .heroStage { min-height: 450px; }
   .stageRing { right: 0; width: 90vw; }
   .signalCore { top: 19%; right: 17%; width: 52%; }

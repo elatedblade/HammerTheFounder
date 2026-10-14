@@ -10,11 +10,13 @@
 .plansHeading h2 {
   margin: 0;
   color: #640028;
-  font-family: Arial Black, Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  min-width: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: clamp(33px, 4vw, 48px);
-  font-weight: 900;
-  letter-spacing: -.075em;
-  line-height: 1;
+  font-weight: 800;
+  letter-spacing: normal;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .planGrid {
@@ -41,11 +43,13 @@
 .planCard h3 {
   margin: 24px 0 13px;
   color: #f7f2eb;
-  font-family: Arial Black, Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  min-width: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: clamp(33px, 3vw, 40px);
-  font-weight: 900;
-  letter-spacing: -.075em;
-  line-height: .95;
+  font-weight: 800;
+  letter-spacing: normal;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .planSummary { margin: 0; color: #f7f2eb; font-size: 13px; line-height: 1.5; }
@@ -53,7 +57,7 @@
 .planDailyCounts li { margin: 10px 0; font-size: 15px; line-height: 1.5; }
 .planDailyCounts strong { font-size: 24px; font-weight: 850; }
 .planPrice { margin: 24px 0 8px; font-size: 14px; line-height: 1.2; }
-.planPrice strong { font-size: 36px; font-weight: 900; letter-spacing: -.05em; }
+.planPrice strong { font-size: 36px; font-weight: 800; letter-spacing: normal; }
 .planFreeWeek { margin: 0 0 auto; color: #f1e65f; font-size: 14px; font-weight: 850; }
 
 .selectButton {

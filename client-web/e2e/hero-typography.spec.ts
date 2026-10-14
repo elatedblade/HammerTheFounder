@@ -48,4 +48,48 @@ for (const viewport of [
       }
     }
   });
+
+  test(`marketing headings stay readable at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+
+    const headings = page.locator("main h1, main h2, main h3");
+    await expect(headings).not.toHaveCount(0);
+
+    for (const enlarged of [false, true]) {
+      if (enlarged) {
+        await page.addStyleTag({ content: "html { font-size: 32px !important; }" });
+      }
+      const measurements = await headings.evaluateAll((elements) => elements.map((element) => {
+        const style = getComputedStyle(element);
+        const box = element.getBoundingClientRect();
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        return {
+          text: element.textContent?.trim(),
+          fontFamily: style.fontFamily,
+          fontSize: parseFloat(style.fontSize),
+          lineHeight: parseFloat(style.lineHeight),
+          tracking: style.letterSpacing === "normal" ? 0 : parseFloat(style.letterSpacing),
+          left: box.left,
+          right: box.right,
+          fragments: Array.from(range.getClientRects(), rect => ({ left: rect.left, right: rect.right })),
+        };
+      }));
+
+      for (const heading of measurements) {
+        expect(heading.text).not.toBe("");
+        expect(heading.fontFamily).not.toMatch(/Arial Black|Impact|Haettenschweiler|Arial Narrow Bold/i);
+        expect(heading.tracking).toBeGreaterThanOrEqual(0);
+        expect(heading.lineHeight).toBeGreaterThanOrEqual(heading.fontSize);
+        expect(heading.left).toBeGreaterThanOrEqual(-1);
+        expect(heading.right).toBeLessThanOrEqual(viewport.width + 1);
+        for (const fragment of heading.fragments) {
+          expect(fragment.left).toBeGreaterThanOrEqual(heading.left - 1);
+          expect(fragment.right).toBeLessThanOrEqual(heading.right + 1);
+          expect(fragment.right).toBeLessThanOrEqual(viewport.width + 1);
+        }
+      }
+    }
+  });
 }

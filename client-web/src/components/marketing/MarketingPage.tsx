@@ -22,12 +22,12 @@ const searchCards = [
 ];
 
 const processSteps = [
-  ["Align on the brief", "We review your profile, resume, role direction, level, location, industries, preferences, and non-negotiables."],
-  ["Find the right targets", "We show you what is worth pursuing instead of dropping a generic stream of job-board links in your lap."],
-  ["Tailor and apply", "A human reviews the application and adapts the materials to the opportunity. No copy-paste spray."],
-  ["Reach out with intention", "Where the plan includes it, we research founder or CXO contacts and send a considered message."],
-  ["Monitor and follow up", "We check updates, log replies, follow up on live conversations, and call for an update when appropriate and agreed."],
-  ["Keep you aligned", "Your dashboard shows activity, outcomes, conversations, and next actions. You stay in control of the direction."],
+  ["Tell us what you want", "Share your experience, target role, preferred location, salary range, and the kind of company you want next."],
+  ["We find relevant jobs", "We search for roles that match your brief instead of sending you a long list of jobs to sort through yourself."],
+  ["Humans apply carefully", "We review the role, tailor your application, and submit it with context. We do not spray the same application everywhere."],
+  ["We follow up with companies", "We track what happens after an application and follow up where it makes sense."],
+  ["Check replies on your dashboard", "Your dashboard shows what we found, what was applied to, and whether a company has replied."],
+  ["We keep the search moving", "We review results, adjust the search when needed, and bring you the next useful update."],
 ];
 
 const comparisonRows = [
@@ -40,6 +40,9 @@ const comparisonRows = [
 ];
 
 export default function MarketingPage() {
+  const whatsappMessage = "hey , i need proof, are you legit??";
+  const whatsappHref = `https://wa.me/919311631709?text=${encodeURIComponent(whatsappMessage)}`;
+
   return (
     <div className={styles.pageShell}>
       <MarketingNav />
@@ -48,13 +51,14 @@ export default function MarketingPage() {
           <div className={styles.heroInner}>
             <div className={styles.heroCopy}>
               <h1 id="hero-title">{MARKETING_COPY.title}</h1>
+              <p className={styles.heroIntro}>{MARKETING_COPY.eyebrow}</p>
               <div className={styles.heroActions}>
                 <Link className={styles.primaryButton} href="#plans">See the plans <span aria-hidden="true">↗</span></Link>
                 <Link className={styles.textButton} href="#process">See what happens <span aria-hidden="true">↓</span></Link>
               </div>
             </div>
 
-            <div className={styles.heroStage} role="img" aria-label="A human-led search moving through role fit, applications, and follow-up">
+            <div className={styles.heroStage}>
               <div className={styles.stageRing} aria-hidden="true" />
               <span className={`${styles.orbitDot} ${styles.orbitDotOne}`} aria-hidden="true" />
               <span className={`${styles.orbitDot} ${styles.orbitDotTwo}`} aria-hidden="true" />
@@ -62,19 +66,24 @@ export default function MarketingPage() {
               <div className={styles.signalCore} aria-hidden="true">
                 <strong>SEARCH<br />IN MOTION</strong>
               </div>
-              <div className={`${styles.orbitCard} ${styles.orbitTarget}`}>
+              <div className={`${styles.orbitCard} ${styles.orbitTarget}`} aria-hidden="true">
                 <strong>Good match</strong>
                 <small>3 roles ready to review</small>
               </div>
-              <div className={`${styles.orbitCard} ${styles.orbitSent}`}>
+              <div className={`${styles.orbitCard} ${styles.orbitSent}`} aria-hidden="true">
                 <strong>We’re applying</strong>
                 <small>Tailored by a human</small>
               </div>
-              <div className={`${styles.orbitCard} ${styles.orbitFollow}`}>
+              <div className={`${styles.orbitCard} ${styles.orbitFollow}`} aria-hidden="true">
                 <strong>Reply checked</strong>
                 <small>Next update is queued</small>
               </div>
-              <div className={styles.orbitNote}>Your attention is better spent somewhere else.</div>
+              <div className={styles.orbitNote} aria-hidden="true">Your attention is better spent somewhere else.</div>
+              <div className={styles.guaranteeStamp} aria-hidden="true">
+                <span>GET</span>
+                <strong>GUARANTEED<br />CONVERSION</strong>
+                <small>IN A WEEK</small>
+              </div>
             </div>
           </div>
           <a className={styles.scrollCue} href="#search" aria-label="Scroll into the work"><span aria-hidden="true">↓</span></a>
@@ -104,7 +113,7 @@ export default function MarketingPage() {
 
         <section className={styles.processSection} id="process" aria-labelledby="process-title">
           <div className={styles.processLayout}>
-            <div className={styles.processIntro}><h2 id="process-title">Quiet for you. Active for us.</h2><p>We treat your application like our own: specific, reviewed, tracked, and followed through.</p></div>
+            <div className={styles.processIntro}><h2 id="process-title">Your search, handled by humans.</h2><p>We are not a recruitment agency. We work directly on your job search: finding roles, applying carefully, following up, and showing you what happened.</p></div>
             <ol className={styles.processList}>{processSteps.map(([title, body]) => <li key={title}><div><h3>{title}</h3><p>{body}</p></div><span className={styles.stepMark} aria-hidden="true">↗</span></li>)}</ol>
           </div>
         </section>
@@ -134,9 +143,13 @@ export default function MarketingPage() {
 
         <section className={styles.faqSection} id="faq" aria-labelledby="faq-title"><div className={styles.sectionHeading}><h2 id="faq-title">Before you begin.</h2></div><div className={styles.faqList}><details><summary>Does choosing a plan activate a campaign?</summary><p>No. Your selection is saved as an inquiry after you sign in. You discuss fit with HTF; an admin explicitly converts and starts a campaign later.</p></details><details><summary>Will HTF apply everywhere automatically?</summary><p>No. The service is human-operated. Operators review the search and manually submit applications or send outreach according to the agreed direction.</p></details><details><summary>Do I need a finished profile to ask about a plan?</summary><p>No. You can select a plan and start the conversation first. A profile is needed for campaign readiness, not for an inquiry.</p></details><details><summary>What happens when I click Continue to WhatsApp?</summary><p>After you confirm in your account, HTF opens its configured WhatsApp Business conversation with a plan and inquiry reference. It is not proof that a message was sent, payment was made, or work has started.</p></details></div></section>
 
-        <section className={styles.finalCta} aria-labelledby="final-title"><h2 id="final-title">Go build, rest, think, or live.</h2><p>Bring us your direction. We will bring the research, applications, outreach, monitoring, and updates.</p><Link className={styles.primaryButton} href="#plans">Find your plan <span aria-hidden="true">↑</span></Link></section>
+        <section className={styles.finalCta} aria-labelledby="final-title"><h2 id="final-title">Go study. We’ll apply for you.</h2><p>Bring us your direction. We will bring the research, applications, outreach, monitoring, and updates.</p><Link className={styles.primaryButton} href="#plans">Find your plan <span aria-hidden="true">↑</span></Link></section>
       </main>
-      <footer className={styles.footer}><Link className={styles.wordmark} href="/"><span className={styles.wordmarkMark}>HTF</span><span>Hammer The Founder</span></Link><p>Your direction stays yours. We handle the follow-through.</p><nav aria-label="Footer navigation"><a href="#plans">Plans</a><a href="#process">Process</a><a href="#faq">FAQ</a><Link href="/profile">Profile</Link><Link href="/dashboard">Dashboard</Link></nav><small>© {new Date().getFullYear()} Hammer The Founder. Outcomes remain with employers.</small></footer>
+      <footer className={styles.footer}><Link className={styles.wordmark} href="/"><span className={styles.wordmarkMark}>HTF</span><span>Hammer The Founder</span></Link><p>Your direction stays yours. We handle the follow-through.</p><nav aria-label="Footer navigation"><a href="#plans">Plans</a><a href="#process">Process</a><a href="#faq">FAQ</a><Link href="/profile">Profile</Link><Link href="/dashboard">Dashboard</Link></nav><small>© 2026 Hammer The Founder. Outcomes remain with employers.</small></footer>
+      <a className={styles.whatsappButton} href={whatsappHref} target="_blank" rel="noreferrer" aria-label="Message Hammer The Founder on WhatsApp">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.52 3.48A11.86 11.86 0 0 0 12.08 0C5.53 0 .2 5.33.2 11.88c0 2.1.55 4.15 1.6 5.96L.1 24l6.3-1.65a11.86 11.86 0 0 0 5.68 1.44h.01c6.55 0 11.88-5.33 11.88-11.88 0-3.18-1.24-6.17-3.45-8.43Zm-8.44 18.3h-.01a9.88 9.88 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.23-.37a9.88 9.88 0 0 1-1.51-5.27C2.2 6.43 6.63 2 12.08 2c2.64 0 5.12 1.03 6.98 2.9a9.82 9.82 0 0 1 2.9 6.99c0 5.45-4.43 9.89-9.88 9.89Zm5.42-7.4c-.3-.15-1.78-.88-2.05-.98-.27-.1-.47-.15-.67.15-.2.3-.77.98-.94 1.18-.17.2-.35.23-.65.08-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.47-1.76-1.64-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.08-.79.37-.27.3-1.04 1.02-1.04 2.5s1.07 2.9 1.22 3.1c.15.2 2.1 3.2 5.1 4.49.71.3 1.27.49 1.7.63.72.23 1.37.2 1.89.12.58-.09 1.78-.73 2.03-1.43.25-.7.25-1.3.17-1.43-.07-.13-.27-.2-.56-.35Z" /></svg>
+        <span>Chat with HTF</span>
+      </a>
     </div>
   );
 }

@@ -28,7 +28,7 @@ export const SERVICE_PLANS: ServicePlan[] = [
     summary: "More applications and outreach, with human follow-through.",
     applicationsPerDay: 15,
     coldMailsPerDay: 5,
-    pricePerWeek: 549,
+    pricePerWeek: 749,
     features: [
       "Human-reviewed applications and cold mails",
       "Reply and follow-up tracking",
@@ -40,7 +40,7 @@ export const SERVICE_PLANS: ServicePlan[] = [
     summary: "Our widest daily coverage for your search.",
     applicationsPerDay: 25,
     coldMailsPerDay: 10,
-    pricePerWeek: 749,
+    pricePerWeek: 1299,
     features: [
       "Human-reviewed applications and cold mails",
       "Coordinated progress and follow-up",
@@ -49,8 +49,8 @@ export const SERVICE_PLANS: ServicePlan[] = [
 ];
 
 export const MARKETING_COPY = {
-  eyebrow: "Human-led applications, without the busywork",
+  eyebrow: "Your job search is handled by humans—not a recruitment agency. We find roles, apply carefully, and follow up for you.",
   title: "You go chill. We’ll apply.",
   intro:
-    "You bring the direction. We find the fit, tailor the work, and keep watch after send—so your search moves while your time comes back.",
+    "We find relevant jobs and carefully apply for you—better than AI—then follow up with companies, so you spend less time applying. Simply check your dashboard for replies.",
 };

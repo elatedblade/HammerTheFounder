@@ -71,6 +71,11 @@
 .orbitFollow { bottom: 8%; left: 18%; background: var(--pink); transform: rotate(-4deg); animation-delay: -4s; }
 .orbitNote { position: absolute; z-index: 5; right: 4%; bottom: 1%; max-width: 205px; padding: 14px 16px; border-radius: 20px 3px 20px 20px; background: var(--cream); color: var(--plum); box-shadow: 6px 7px 0 var(--plumDeep); font: 800 15px/1.08 Georgia, serif; transform: rotate(5deg); }
 .orbitNote::after { position: absolute; top: 20px; left: -13px; width: 23px; height: 23px; border-radius: 50%; background: var(--lilac); content: ""; }
+.guaranteeStamp { position: absolute; z-index: 6; top: -3%; right: 1%; display: grid; width: 154px; height: 154px; place-content: center; gap: 3px; border: 2px dashed var(--plumDeep); border-radius: 50%; background: var(--yellow); color: var(--plum); text-align: center; box-shadow: 7px 8px 0 var(--plumDeep); transform: rotate(10deg); animation: stampWobble 5s ease-in-out infinite; }
+.processIntro h2 { font-size: clamp(2.8rem, 7vw, 7.5rem); }
+.guaranteeStamp span, .guaranteeStamp small { font: 850 9px/1.1 Arial, sans-serif; letter-spacing: .16em; }
+.guaranteeStamp strong { font: 900 18px/.9 Arial Black, Impact, sans-serif; letter-spacing: -.06em; }
+.guaranteeStamp small { letter-spacing: .1em; }
 .orbitDot { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: var(--pink); }
 .orbitDotOne { top: 15%; left: 4%; }
 .orbitDotTwo { right: 2%; bottom: 25%; width: 27px; height: 27px; background: var(--lilac); }
@@ -197,11 +202,15 @@
 .footer nav { display: flex; flex-wrap: wrap; gap: 21px; padding-top: 15px; border-top: 1px solid var(--line); }
 .footer nav a { color: var(--muted); }
 .footer small { display: block; margin-top: 24px; padding-top: 15px; border-top: 1px solid var(--line); font-size: 10px; }
+.whatsappButton { position: fixed; z-index: 30; right: 22px; bottom: 22px; display: inline-flex; align-items: center; gap: 9px; padding: 12px 15px 12px 12px; border: 2px solid var(--plumDeep); border-radius: 999px; background: #25d366; color: #073b1a; box-shadow: 5px 6px 0 var(--plumDeep); font-size: 12px; font-weight: 850; text-decoration: none; transition: transform .25s ease, box-shadow .25s ease; }
+.whatsappButton:hover, .whatsappButton:focus-visible { transform: translateY(-3px); box-shadow: 5px 9px 0 var(--plumDeep); }
+.whatsappButton svg { width: 24px; height: 24px; fill: currentColor; }
 
 @keyframes ringTurn { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes corePulse { 0%, 100% { transform: rotate(4deg) scale(1); box-shadow: 14px 16px 0 var(--plumDeep); } 50% { transform: rotate(2deg) scale(1.025); box-shadow: 17px 20px 0 var(--plumDeep); } }
 @keyframes orbitDrift { 0%, 100% { margin-top: 0; } 50% { margin-top: -11px; } }
 @keyframes tickerMove { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes stampWobble { 0%, 100% { transform: rotate(10deg); } 50% { transform: rotate(6deg) translateY(-4px); } }
 
 @media (max-width: 960px) {
   .heroInner { grid-template-columns: 1fr; }
@@ -234,7 +243,7 @@
   .mobileMenu summary::-webkit-details-marker { display: none; }
   .mobileLinks { position: absolute; top: 43px; right: 0; min-width: 185px; display: grid; gap: 18px; padding: 18px; background: var(--plumDeep); border: 1px solid rgb(247 242 235 / .3); border-radius: 6px; box-shadow: 0 10px 25px rgb(34 27 34 / .2); }
   .hero { padding-top: 62px; padding-bottom: 75px; }
-  .heroStage { min-height: 450px; }
+  .heroStage { min-height: 570px; }
   .stageRing { right: 0; width: 90vw; }
   .signalCore { top: 19%; right: 17%; width: 52%; }
   .orbitCard { min-width: 133px; padding: 11px 12px; }
@@ -242,6 +251,9 @@
   .orbitSent { right: 0; }
   .orbitFollow { left: 6%; }
   .orbitNote { right: 0; bottom: 3%; max-width: 170px; font-size: 13px; }
+  .guaranteeStamp { top: -10%; right: -2%; width: 112px; height: 112px; box-shadow: 5px 6px 0 var(--plumDeep); }
+  .guaranteeStamp strong { font-size: 13px; }
+  .guaranteeStamp span, .guaranteeStamp small { font-size: 7px; }
   .searchSection, .processSection, .comparisonSection, .faqSection { padding-top: 85px; padding-bottom: 85px; }
   .searchCards { grid-template-columns: 1fr; }
   .searchCard:last-child { grid-column: auto; }
@@ -257,6 +269,8 @@
   .comparisonRow > div:nth-child(3)::before { color: var(--red); content: "HTF human-led: "; font-weight: 850; }
   .finalCta { padding-top: 85px; padding-bottom: 95px; }
   .footer { padding-top: 28px; }
+  .whatsappButton { right: 14px; bottom: 14px; width: 50px; height: 50px; justify-content: center; padding: 0; border-radius: 50%; }
+  .whatsappButton span { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

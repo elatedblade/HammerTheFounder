@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 # The default image is production-shaped. Build with --build-arg
 # INSTALL_EXTRAS=dev for the test-capable development image used by Compose.
